@@ -1,6 +1,22 @@
 # DCW
 
-```bash
+## Install & Update
+
+Via curl
+```
+curl https://raw.githubusercontent.com/the-art-of-dev/dcw/main/dcw.sh -o dcw.sh
+chmod +x dcw.sh
+```
+
+Via wget
+```
+wget -O dcw.sh https://raw.githubusercontent.com/the-art-of-dev/dcw/main/dcw.sh 
+chmod +x dcw.sh
+```
+
+## Help
+
+```
 WELCOME TO DCW
 
 Usage:  dcw.sh [options] [dcw-units] [docker-compose options]
