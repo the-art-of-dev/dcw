@@ -2,6 +2,9 @@
 
 # Docker compose wrapper DCW main module
 
+# Check for new version
+check_last_published_version
+
 # Print help message if no arguments
 if [ $# -eq 0 ]; then
     help
