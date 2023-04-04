@@ -1,0 +1,10 @@
+version: '2.4'
+
+networks:
+  test-net:
+
+services:
+  web:
+    image: nginx:1.17.8-alpine
+    networks:
+      - test-net

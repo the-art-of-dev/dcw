@@ -16,3 +16,10 @@ function error() {
 function warning() {
     printf "[\e[33mWARNING\e[0m] $1\n"
 }
+
+# Print debug message function
+function debug() {
+    if [ "$DCW_DEBUG" == "true" ]; then
+        printf "[\e[36mDEBUG\e[0m] $1\n"
+    fi
+}

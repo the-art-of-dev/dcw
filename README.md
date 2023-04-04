@@ -14,7 +14,7 @@ wget -O dcw.sh https://raw.githubusercontent.com/the-art-of-dev/dcw/main/dcw.sh
 chmod +x dcw.sh
 ```
 
-## Help
+## Usage
 
 ```
 WELCOME TO DCW
@@ -37,3 +37,5 @@ Examples:
         dcw.sh -e dev be up -d (run with custom environment)
         ENV=dev dcw.sh be up -d (run with custom environment)
 ```
+
+## Roadmap

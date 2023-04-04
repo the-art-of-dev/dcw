@@ -39,10 +39,22 @@ function run_dcw_unit() {
 
         local dcw_files=""
         while IFS= read -r line; do
-            dcw_files="$dcw_files -f $line"
+            if [ -f "$line" ]; then
+                dcw_files="$dcw_files -f $line"
+            else
+                warning "dcw-units/dcw.$1.txt: $line not found"
+            fi
         done <"./dcw-units/dcw.$1.txt"
 
-        # info "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
+        if [ ! -z "$line" ]; then
+            if [ -f "$line" ]; then
+                dcw_files="$dcw_files -f $line"
+            else
+                warning "dcw-units/dcw.$1.txt: $line not found"
+            fi
+        fi
+
+        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
 
         docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}
 

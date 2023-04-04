@@ -16,10 +16,17 @@ function error() {
 function warning() {
     printf "[\e[33mWARNING\e[0m] $1\n"
 }
-export DCW_VERSION=0.1.1
+
+# Print debug message function
+function debug() {
+    if [ "$DCW_DEBUG" == "true" ]; then
+        printf "[\e[36mDEBUG\e[0m] $1\n"
+    fi
+}
+export DCW_VERSION=0.1.2
 export DCW_VERSION_MAJOR=0
 export DCW_VERSION_MINOR=1
-export DCW_VERSION_PATCH=1
+export DCW_VERSION_PATCH=2
 
 # Compare two versions function
 # Returns 0 if version1 is equal to version2
@@ -87,6 +94,7 @@ function help() {
     help_line "Option:" "--list-env (list available environments)"
     help_line "Option:" "--show-env [environment] (show environment variables)"
     help_line "Option:" "--list-services, --ls (list available services)\n"
+    help_line "Option:" "--debug (enable debug mode)\n"
     help_line "\nExamples:\n"
     help_line "" "dcw.sh be up -d"
     help_line "" "dcw.sh be.fe up -d (run multiple dcw-units)"
@@ -184,10 +192,22 @@ function run_dcw_unit() {
 
         local dcw_files=""
         while IFS= read -r line; do
-            dcw_files="$dcw_files -f $line"
+            if [ -f "$line" ]; then
+                dcw_files="$dcw_files -f $line"
+            else
+                warning "dcw-units/dcw.$1.txt: $line not found"
+            fi
         done <"./dcw-units/dcw.$1.txt"
 
-        # info "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
+        if [ ! -z "$line" ]; then
+            if [ -f "$line" ]; then
+                dcw_files="$dcw_files -f $line"
+            else
+                warning "dcw-units/dcw.$1.txt: $line not found"
+            fi
+        fi
+
+        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
 
         docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}
 
@@ -196,6 +216,7 @@ function run_dcw_unit() {
         error "dcw-units/dcw.$1.txt not found"
     fi
 }
+
 # Docker compose wrapper DCW main module
 
 # Check for new version
@@ -241,6 +262,10 @@ while [[ $# -gt 0 ]]; do
         --list-services | --ls)
             get_services
             exit 0
+            ;;
+        --debug)
+            export DCW_DEBUG=true
+            shift
             ;;
         *)
             error "Unknown option $1\n"

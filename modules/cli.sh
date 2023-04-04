@@ -33,6 +33,7 @@ function help() {
     help_line "Option:" "--list-env (list available environments)"
     help_line "Option:" "--show-env [environment] (show environment variables)"
     help_line "Option:" "--list-services, --ls (list available services)\n"
+    help_line "Option:" "--debug (enable debug mode)\n"
     help_line "\nExamples:\n"
     help_line "" "dcw.sh be up -d"
     help_line "" "dcw.sh be.fe up -d (run multiple dcw-units)"

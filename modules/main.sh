@@ -46,6 +46,10 @@ while [[ $# -gt 0 ]]; do
             get_services
             exit 0
             ;;
+        --debug)
+            export DCW_DEBUG=true
+            shift
+            ;;
         *)
             error "Unknown option $1\n"
             help
