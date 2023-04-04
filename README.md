@@ -39,3 +39,9 @@ Examples:
 ```
 
 ## Roadmap
+
+- Fix version sorting
+- Fix default environment
+- Support generating Jenkins pipelines
+- Integrate with maven
+- Improve docs
