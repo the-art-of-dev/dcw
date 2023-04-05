@@ -17,25 +17,30 @@ chmod +x dcw.sh
 ## Usage
 
 ```
-WELCOME TO DCW
+WELCOME TO DCW 0.1.3
 
-Usage:  dcw.sh [options] [dcw-units] [docker-compose options]
+Usage:	dcw.sh [options] [dcw-units] [docker-compose options]
 
-Option: -h, --help (show help message)
-Option: -e, --env [environment] (set environment)
-Option: -l, --list (list available dcw-units)
-Option: --init (init dcw-units directory)
-Option: --list-env (list available environments)
-Option: --show-env [environment] (show environment variables)
-Option: --list-services, --ls (list available services)
+Options:
+	
+	-h, --help (show help message)
+	-e, --env [environment] (set environment)
+	-l, --list (list available dcw-units)
+	--init (init dcw-units directory)
+	--list-env (list available environments)
+	--show-env [environment] (show environment variables)
+	--list-services, --ls (list available services)
 
+	--debug (enable debug mode)
+
+	-p, --project [project] (set project name)
 
 Examples:
-
-        dcw.sh be up -d
-        dcw.sh be.fe up -d (run multiple dcw-units)
-        dcw.sh -e dev be up -d (run with custom environment)
-        ENV=dev dcw.sh be up -d (run with custom environment)
+	
+	dcw.sh be up -d
+	dcw.sh be.fe up -d (run multiple dcw-units)
+	dcw.sh -e dev be up -d (run with custom environment)
+	ENV=dev dcw.sh be up -d (run with custom environment)
 ```
 
 ## Roadmap
