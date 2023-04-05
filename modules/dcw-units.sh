@@ -54,9 +54,9 @@ function run_dcw_unit() {
             fi
         fi
 
-        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
+        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p $DCW_PROJECT ${@:3}"
 
-        docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}
+        docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p $DCW_PROJECT ${@:3}
 
         info "Done"
     else

@@ -23,10 +23,10 @@ function debug() {
         printf "[\e[36mDEBUG\e[0m] $1\n"
     fi
 }
-export DCW_VERSION=0.1.2
+export DCW_VERSION=0.1.3
 export DCW_VERSION_MAJOR=0
 export DCW_VERSION_MINOR=1
-export DCW_VERSION_PATCH=2
+export DCW_VERSION_PATCH=3
 
 # Compare two versions function
 # Returns 0 if version1 is equal to version2
@@ -79,7 +79,7 @@ function random_color() {
 
 # Print welcome message function
 function welcome() {
-    title "WELCOME TO DCW\n"
+    title "WELCOME TO DCW $DCW_VERSION\n"
 }
 
 # Print help message function
@@ -87,15 +87,17 @@ function help() {
     welcome
 
     help_line "Usage:" "dcw.sh [options] [dcw-units] [docker-compose options]\n"
-    help_line "Option:" "-h, --help (show help message)"
-    help_line "Option:" "-e, --env [environment] (set environment)"
-    help_line "Option:" "-l, --list (list available dcw-units)"
-    help_line "Option:" "--init (init dcw-units directory)"
-    help_line "Option:" "--list-env (list available environments)"
-    help_line "Option:" "--show-env [environment] (show environment variables)"
-    help_line "Option:" "--list-services, --ls (list available services)\n"
-    help_line "Option:" "--debug (enable debug mode)\n"
-    help_line "\nExamples:\n"
+    help_line "Options:\n" ""
+    help_line "" "-h, --help (show help message)"
+    help_line "" "-e, --env [environment] (set environment)"
+    help_line "" "-l, --list (list available dcw-units)"
+    help_line "" "--init (init dcw-units directory)"
+    help_line "" "--list-env (list available environments)"
+    help_line "" "--show-env [environment] (show environment variables)"
+    help_line "" "--list-services, --ls (list available services)\n"
+    help_line "" "--debug (enable debug mode)\n"
+    help_line "" "-p, --project [project] (set project name)"
+    help_line "\nExamples:\n" ""
     help_line "" "dcw.sh be up -d"
     help_line "" "dcw.sh be.fe up -d (run multiple dcw-units)"
     help_line "" "dcw.sh -e dev be up -d (run with custom environment)"
@@ -207,9 +209,9 @@ function run_dcw_unit() {
             fi
         fi
 
-        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}"
+        debug "Running docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p $DCW_PROJECT ${@:3}"
 
-        docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p gen2 ${@:3}
+        docker-compose ${dcw_files} --env-file $(get_env_path $1 $2) --profile true -p $DCW_PROJECT ${@:3}
 
         info "Done"
     else
@@ -267,6 +269,10 @@ while [[ $# -gt 0 ]]; do
             export DCW_DEBUG=true
             shift
             ;;
+        -p | --project)
+            export DCW_PROJECT=$2
+            shift 2
+            ;;
         *)
             error "Unknown option $1\n"
             help
@@ -277,6 +283,14 @@ while [[ $# -gt 0 ]]; do
         break
     fi
 done
+
+# Check if DCW_PROJECT is set
+if [ -z "$DCW_PROJECT" ]; then
+    warning "DCW_PROJECT is not set, using 'dcw' as default"
+    export DCW_PROJECT=dcw
+else
+    info "DCW_PROJECT is set to $DCW_PROJECT"
+fi
 
 # If environment is not set, set it to example
 if [ -z "$ENV" ]; then

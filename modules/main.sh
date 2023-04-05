@@ -50,6 +50,10 @@ while [[ $# -gt 0 ]]; do
             export DCW_DEBUG=true
             shift
             ;;
+        -p | --project)
+            export DCW_PROJECT=$2
+            shift 2
+            ;;
         *)
             error "Unknown option $1\n"
             help
@@ -60,6 +64,14 @@ while [[ $# -gt 0 ]]; do
         break
     fi
 done
+
+# Check if DCW_PROJECT is set
+if [ -z "$DCW_PROJECT" ]; then
+    warning "DCW_PROJECT is not set, using 'dcw' as default"
+    export DCW_PROJECT=dcw
+else
+    info "DCW_PROJECT is set to $DCW_PROJECT"
+fi
 
 # If environment is not set, set it to example
 if [ -z "$ENV" ]; then
