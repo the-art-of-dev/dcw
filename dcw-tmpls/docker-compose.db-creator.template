@@ -1,0 +1,14 @@
+version: '2.4'
+
+networks:
+  test-net:
+
+services:
+  ${SVC_NAME}:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: $${DB_USER}
+      POSTGRES_PASSWORD: $${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - test-net

@@ -1,0 +1,14 @@
+version: '2.4'
+
+networks:
+  test-net:
+
+services:
+  jenkins:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    networks:
+      - test-net

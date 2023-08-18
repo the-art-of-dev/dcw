@@ -2,3 +2,18 @@
 node_modules
 logs
 *.log
+
+# Ignore venv and virtual environment directories
+venv/
+env/
+.venv/
+
+# Ignore editor-specific files
+.vscode/
+*.pyc
+__pycache__/
+
+bin
+lib
+include
+pyvenv.cfg

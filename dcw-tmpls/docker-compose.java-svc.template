@@ -1,0 +1,14 @@
+version: '2.4'
+
+networks:
+  gen2-network:
+
+services:
+  ${SVC_NAME}:
+    image: $${IMAGE_PREFIX}${SVC_IMAGE}:$${IMAGE_TAG}
+    hostname: ${SVC_NAME}
+    ports: ${SVC_PORTS}
+    environment:
+      - SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE}
+    networks:
+      - gen2-network

@@ -1,0 +1,6 @@
+typer[all]
+colorlog
+PyYAML
+python-dotenv
+prompt_toolkit
+prettytable
