@@ -1,7 +1,7 @@
 version: '2.4'
 
 networks:
-  gen2-network:
+  test-net:
 
 services:
   ${SVC_NAME}:
@@ -11,4 +11,4 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE}
     networks:
-      - gen2-network
+      - test-net

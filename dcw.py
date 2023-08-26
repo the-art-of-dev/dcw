@@ -473,21 +473,3 @@ def tmpl_list():
 
 if __name__ == "__main__":
     app()
-    # content = ''
-    # with open('./templates/docker-compose.java-svc.template') as f:
-    #     content = f.read()
-
-    # template = string.Template(content)
-
-    # placeholders = re.findall(r'[^$]\$\{([^}]*)\}', content)
-    # print(list(set(placeholders)))
-
-    # obj = yaml.safe_load(template.substitute(
-    #     **{
-    #         'SVC_NAME': 'gggg',
-    #         'SVC_IMAGE': 'gggg1',
-    #         'SVC_PORTS': '["8081:8081", "6081:6081"]'
-    #     }
-    # ))
-
-    # print(yaml.safe_dump(obj))

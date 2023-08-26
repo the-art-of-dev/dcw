@@ -2,6 +2,7 @@
 node_modules
 logs
 *.log
+.idea
 
 # Ignore venv and virtual environment directories
 venv/
