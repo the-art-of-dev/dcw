@@ -22,24 +22,35 @@ import re
 
 import enum
 
+# ----------------------------------
 # CONSTANTS
+# ----------------------------------
+
 DCW_SVCS_DIR = './dcw-services'
 DCW_UNITS_DIR = './dcw-units'
 DCW_ENVS_DIR = './dcw-envs'
 DCW_TMPLS_DIR = './dcw-tmpls'
 TMP_DIR = './tmp'
 
+
+# ----------------------------------
 # LOGGER
+# ----------------------------------
 
 colorlog_fmt = "{log_color}{levelname}: {message}"
-colorlog.basicConfig(level=logging.DEBUG, style="{", format=colorlog_fmt, stream=None)
+colorlog.basicConfig(level=logging.DEBUG,
+                     style="{", format=colorlog_fmt, stream=None)
 
 logger = logging.getLogger()
 
 
-# DCW SERVICES
+# ----------------------------------
+# DCW CORE
+# ----------------------------------
 
 class DCWService:
+    """DCW Service represents a docker-compose service defined in a docker-compose.yml file"""
+
     def __init__(self, name: str, filename: str, config) -> None:
         self.name = name
         self.filename = filename
@@ -56,7 +67,8 @@ class DCWService:
                 f'svc.{self.name}.labels.'):
             return
 
-        section = 'environment' if env_name.startswith(f'svc.{self.name}.environment.') else 'labels'
+        section = 'environment' if env_name.startswith(
+            f'svc.{self.name}.environment.') else 'labels'
 
         print(section)
 
@@ -117,7 +129,8 @@ class DCWUnit:
         for svc in self.services:
             svc.set_env_vars(dcw_env.svc_env_vars)
         # os.system(dc_command)
-        result = subprocess.run(dc_command.split(' '), capture_output=True, text=True)
+        result = subprocess.run(dc_command.split(
+            ' '), capture_output=True, text=True)
         return yaml.safe_load(result.stdout)
 
     def save(self):
@@ -145,8 +158,9 @@ class DCWTemplate:
         return list(set(placeholders))
 
 
-# -----------------------------
-
+# ----------------------------------
+# DCW INFRASTRUCTURE
+# ----------------------------------
 
 class DCWServicesLoader:
     def __init__(self, dirPath: str) -> None:
@@ -200,7 +214,8 @@ class DCWUnitLoader:
         svcs = []
         with open(full_path) as f:
             for line in f:
-                svc = next(filter(lambda s: s.name == line.strip(), self.services), None)
+                svc = next(filter(lambda s: s.name ==
+                           line.strip(), self.services), None)
                 if svc is None:
                     continue
                 svcs.append(svc)
@@ -273,6 +288,10 @@ class DCWUnitKubernetesExporter(DCWUnitDockerComposeExporter):
 
         os.remove(os.path.join(self.output_dir, self.output_filename))
 
+
+# ----------------------------------
+# DCW CLI APPLICATION
+# ----------------------------------
 
 if not os.path.exists(TMP_DIR):
     os.makedirs(TMP_DIR)
