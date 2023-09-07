@@ -10,9 +10,9 @@ from typing import List, Optional
 from typing_extensions import Annotated
 import pprint as pp
 
-from core import DCWUnit
-from config import DCW_ENVS_DIR, DCW_SVCS_DIR, DCW_UNITS_DIR, DCW_TMPLS_DIR, TMP_DIR
-from infra import DCWServicesLoader, DCWEnvironmentsLoader, DCWUnitLoader, DCWTemplateLoader, DCWUnitDockerComposeExporter, DCWUnitKubernetesExporter
+from dcw.core import DCWUnit
+from dcw.config import DCW_ENVS_DIR, DCW_SVCS_DIR, DCW_UNITS_DIR, DCW_TMPLS_DIR, TMP_DIR
+from dcw.infra import DCWServicesLoader, DCWEnvironmentsLoader, DCWUnitLoader, DCWTemplateLoader, DCWUnitDockerComposeExporter, DCWUnitKubernetesExporter
 
 import enum
 
