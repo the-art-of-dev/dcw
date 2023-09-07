@@ -4,7 +4,7 @@ import subprocess
 import re
 import string
 
-from config import TMP_DIR
+from dcw.config import TMP_DIR
 
 # ----------------------------------
 # DCW CORE

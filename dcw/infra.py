@@ -1,4 +1,4 @@
-from core import DCWService, DCWEnv, DCWUnit, DCWTemplate
+from dcw.core import DCWService, DCWEnv, DCWUnit, DCWTemplate
 import yaml
 from dotenv import dotenv_values
 import os
