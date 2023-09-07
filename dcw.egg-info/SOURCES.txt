@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+dcw/app.py
+dcw.egg-info/PKG-INFO
+dcw.egg-info/SOURCES.txt
+dcw.egg-info/dependency_links.txt
+dcw.egg-info/entry_points.txt
+dcw.egg-info/requires.txt
+dcw.egg-info/top_level.txt
