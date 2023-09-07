@@ -1,0 +1,5 @@
+DCW_SVCS_DIR = './dcw-services'
+DCW_UNITS_DIR = './dcw-units'
+DCW_ENVS_DIR = './dcw-envs'
+DCW_TMPLS_DIR = './dcw-tmpls'
+TMP_DIR = './tmp'
