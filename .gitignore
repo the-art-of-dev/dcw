@@ -20,5 +20,3 @@ include
 pyvenv.cfg
 
 tmp
-
-dist
