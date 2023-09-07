@@ -20,3 +20,6 @@ include
 pyvenv.cfg
 
 tmp
+
+dist
+*.egg-info
