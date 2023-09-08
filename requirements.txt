@@ -6,3 +6,4 @@
   prettytable
   autopep8
   pylint
+  pytest

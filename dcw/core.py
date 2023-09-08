@@ -1,14 +1,17 @@
+import os
 import typing
 import yaml
 import subprocess
 import re
 import string
 
-from dcw.config import TMP_DIR
+from dcw.config import get_config
+from dcw.logger import logger
 
 # ----------------------------------
 # DCW CORE
 # ----------------------------------
+
 
 class DCWService:
     """DCW Service represents a docker-compose service defined in a docker-compose.yml file"""
@@ -17,7 +20,7 @@ class DCWService:
         self.name = name
         self.filename = filename
         self.config = config
-        self.tmp_filename = f'{TMP_DIR}/{self.name}.yml'
+        self.tmp_filename = f'{get_config("TMP_DIR")}/{self.name}.yml'
 
         if self.name not in self.config['services']:
             raise Exception(f'Service ${filename} not valid!')
@@ -31,8 +34,6 @@ class DCWService:
 
         section = 'environment' if env_name.startswith(
             f'svc.{self.name}.environment.') else 'labels'
-
-        print(section)
 
         env_name = env_name[len(f'svc.{self.name}.{section}.'):]
 
@@ -57,7 +58,7 @@ class DCWEnv:
         self.filename = filename
         self.env_vars = {}
         self.svc_env_vars = {}
-        self.tmp_filename = f'{TMP_DIR}/.{self.name}.env'
+        self.tmp_filename = f'{get_config("TMP_DIR")}/.{self.name}.env'
 
         for k in env_vars:
             if k.startswith('svc.'):
@@ -87,10 +88,10 @@ class DCWUnit:
     def render(self, dcw_env):
         dc_files = [f'-f {s.tmp_filename}' for s in self.services]
         dc_command = f"docker-compose {' '.join(dc_files)} --env-file {dcw_env.tmp_filename} convert"
-        # logger.info(f"Running command: {dc_command}")
+        logger.info(f"Running command > {dc_command}")
         for svc in self.services:
             svc.set_env_vars(dcw_env.svc_env_vars)
-        # os.system(dc_command)
+        os.system(dc_command)
         result = subprocess.run(dc_command.split(
             ' '), capture_output=True, text=True)
         return yaml.safe_load(result.stdout)

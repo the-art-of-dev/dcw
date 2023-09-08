@@ -11,14 +11,13 @@ from typing_extensions import Annotated
 import pprint as pp
 
 from dcw.core import DCWUnit
-from dcw.config import DCW_ENVS_DIR, DCW_SVCS_DIR, DCW_UNITS_DIR, DCW_TMPLS_DIR, TMP_DIR
+from dcw.config import get_config, set_config
 from dcw.infra import DCWServicesLoader, DCWEnvironmentsLoader, DCWUnitLoader, DCWTemplateLoader, DCWUnitDockerComposeExporter, DCWUnitKubernetesExporter
+from dcw.utils import is_tool
 
 import enum
 
-
-if not os.path.exists(TMP_DIR):
-    os.makedirs(TMP_DIR)
+from dcw.logger import logger
 
 
 class DCWUnitBundleOutputType(str, enum.Enum):
@@ -26,7 +25,9 @@ class DCWUnitBundleOutputType(str, enum.Enum):
     KUBERNETES = "k8s"
 
 
-app = typer.Typer()
+app = typer.Typer(
+    help="Docker Compose Wrapper | Depyment Configuration Wrapper",
+)
 svc_app = typer.Typer()
 env_app = typer.Typer()
 unit_app = typer.Typer()
@@ -45,9 +46,9 @@ def unit_bundle(
         outputType: DCWUnitBundleOutputType = typer.Option(DCWUnitBundleOutputType.DOCKER_COMPOSE,
                                                            help="Type of output bundle")):
     """Build a dcw unit"""
-    envs = DCWEnvironmentsLoader(DCW_ENVS_DIR).load_all()
-    svcs = DCWServicesLoader(DCW_SVCS_DIR).load_all()
-    units = DCWUnitLoader(DCW_UNITS_DIR, svcs).load_all()
+    envs = DCWEnvironmentsLoader(get_config('DCW_ENVS_DIR')).load_all()
+    svcs = DCWServicesLoader(get_config('DCW_SVCS_DIR')).load_all()
+    units = DCWUnitLoader(get_config('DCW_UNITS_DIR'), svcs).load_all()
 
     if name is None:
         name = radiolist_dialog(
@@ -77,8 +78,8 @@ def unit_bundle(
 @unit_app.command("list")
 def unit_list(verbose: bool = False):
     """List all dcw units"""
-    svcs = DCWServicesLoader(DCW_SVCS_DIR).load_all()
-    units = DCWUnitLoader(DCW_UNITS_DIR, svcs).load_all()
+    svcs = DCWServicesLoader(get_config('DCW_SVCS_DIR')).load_all()
+    units = DCWUnitLoader(get_config('DCW_UNITS_DIR'), svcs).load_all()
     tbl = prettytable.PrettyTable()
     name_column = []
     filename_column = []
@@ -123,7 +124,7 @@ def unit_new(name: str = typer.Option(None, help='New unit name'),
             text='Enter new DCW unit path:',
             default=f'./dcw-units/dcw.{name}.txt').run()
 
-    all_services = DCWServicesLoader(DCW_SVCS_DIR).load_all()
+    all_services = DCWServicesLoader(get_config('DCW_SVCS_DIR')).load_all()
 
     if prompt:
         svc = checkboxlist_dialog(
@@ -147,7 +148,7 @@ def unit_new(name: str = typer.Option(None, help='New unit name'),
 @svc_app.command("list")
 def svc_list():
     """List all dcw services"""
-    svcs = DCWServicesLoader(DCW_SVCS_DIR).load_all()
+    svcs = DCWServicesLoader(get_config('DCW_SVCS_DIR')).load_all()
     tbl = prettytable.PrettyTable()
     tbl.add_column('Name', [s.name for s in svcs])
     tbl.add_column('Filename', [s.filename for s in svcs])
@@ -158,7 +159,7 @@ def svc_list():
 def tmpl_new(tmpl_name: str = typer.Option(None, help="Template to use for creating service"),
              tmpl_vars_file: str = typer.Option(None, help="Variables file to use for template placeholders")):
     """List all dcw services"""
-    tmpls = DCWTemplateLoader(DCW_TMPLS_DIR).load_all()
+    tmpls = DCWTemplateLoader(get_config('DCW_TMPLS_DIR')).load_all()
 
     if tmpl_name is None:
         tmpl_name = radiolist_dialog(
@@ -185,7 +186,7 @@ def tmpl_new(tmpl_name: str = typer.Option(None, help="Template to use for creat
 @env_app.command("list")
 def env_list():
     """List all dcw environments"""
-    envs = DCWEnvironmentsLoader(DCW_ENVS_DIR).load_all()
+    envs = DCWEnvironmentsLoader(get_config('DCW_ENVS_DIR')).load_all()
     tbl = prettytable.PrettyTable()
     tbl.add_column('Name', [e.name for e in envs])
     tbl.add_column('Filename', [e.filename for e in envs])
@@ -195,7 +196,7 @@ def env_list():
 @env_app.command("show")
 def env_show():
     """List all dcw environments"""
-    envs = DCWEnvironmentsLoader(DCW_ENVS_DIR).load_all()
+    envs = DCWEnvironmentsLoader(get_config('DCW_ENVS_DIR')).load_all()
     result = radiolist_dialog(
         title="Show DCW Environment",
         text="Select DCW Environment",
@@ -207,12 +208,84 @@ def env_show():
 
 @tmpl_app.command("list")
 def tmpl_list():
-    tmpls = DCWTemplateLoader(DCW_TMPLS_DIR).load_all()
+    tmpls = DCWTemplateLoader(get_config('DCW_TMPLS_DIR')).load_all()
     tbl = prettytable.PrettyTable()
     tbl.add_column('Name', [t.name for t in tmpls])
     tbl.add_column('Filename', [t.filename for t in tmpls])
     print(tbl)
 
+
+@app.command("init")
+def init_dcw(dir: str = typer.Option(None, help="DCW directory path"),
+             examples: bool = typer.Option(False, help="Create examples while initting dcw")):
+
+    # check for dcw dir, if not exist create it
+    if dir is None:
+        dir = '.'
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    # init dcw-envs [with examples], hanlde errors
+    try:
+        os.makedirs(get_config('DCW_ENVS_DIR'))
+        logger.info(f'Created {get_config("DCW_ENVS_DIR")}')
+    except Exception as e:
+        logger.warning(
+            f'{get_config("DCW_ENVS_DIR")} already exists or cannot be created')
+
+    # init dcw-svcs [with examples], hanlde errors
+    try:
+        os.makedirs(get_config('DCW_SVCS_DIR'))
+        logger.info(f'Created {get_config("DCW_SVCS_DIR")}')
+    except Exception as e:
+        logger.warning(
+            f'{get_config("DCW_SVCS_DIR")} already exists or cannot be created')
+
+    # init dcw-tmpls [with examples], hanlde errors
+    try:
+        os.makedirs(get_config('DCW_TMPLS_DIR'))
+        logger.info(f'Created {get_config("DCW_TMPLS_DIR")}')
+    except Exception as e:
+        logger.warning(
+            f'{get_config("DCW_TMPLS_DIR")} already exists or cannot be created')
+
+    # init dcw-units [with examples], hanlde errors
+    try:
+        os.makedirs(get_config('DCW_UNITS_DIR'))
+        logger.info(f'Created {get_config("DCW_UNITS_DIR")}')
+    except Exception as e:
+        logger.warning(
+            f'{get_config("DCW_UNITS_DIR")} already exists or cannot be created')
+
+
+@app.command("check")
+def check_dcw(dir: str = typer.Option(None, help="DCW directory path"),
+              fail: bool = typer.Option(
+                  False, help="Fail application when check fails"),
+              lint: bool = typer.Option(True, help="Check files for syntax errors")):
+
+    # check for docker-compose/docker compose
+    if not is_tool('docker-compose'):
+        logger.error('docker-compose not found!')
+        logger.info(
+            'Please visit https://github.com/docker/compose to install docker-compose and try again.')
+        raise typer.Abort()
+
+    # check for kompose
+    if not is_tool('kompose'):
+        logger.error(
+            'Please visit https://github.com/kubernetes/kompose to install kompose and try again.')
+        raise typer.Abort()
+
+    # check for dcw-envs with syntax checking [, fail when check fails]
+    # check for dcw-svcs with syntax checking [, fail when check fails]
+    # check for dcw-tmpls with syntax checking [, fail when check fails]
+    # check for dcw-units with syntax checking [, fail when check fails]
+
+
+if not os.path.exists(get_config('TMP_DIR')):
+    os.makedirs(get_config('TMP_DIR'))
 
 if __name__ == "__main__":
     app()
