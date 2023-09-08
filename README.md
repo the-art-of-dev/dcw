@@ -7,6 +7,18 @@
 Manage deployment configuration for simple and semi-complex deployment environments using docker compose files in yaml
 format, resulting in a deployment configuration specific to the deployment environment.
 
+## Installation
+
+Requirements:
+
+- Python3 (>=3.7)
+- docker-compose
+- kompose
+
+```sh
+pip3 install "git+https://github.com/the-art-of-dev/dcw.git#egg=dcw"
+```
+
 ## Boundaries
 
 - Use docker compose yaml files to describe services you need
