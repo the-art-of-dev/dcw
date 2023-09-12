@@ -11,7 +11,7 @@ config = {
 }
 
 
-def get_config(name: str):
+def get_config(name: str) -> str:
     if name not in config:
         raise Exception(f'Invalid config name: {name}')
 
