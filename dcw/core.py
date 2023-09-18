@@ -3,13 +3,15 @@ import yaml
 import subprocess
 import re
 import string
-from typing import Dict
+from typing import Any, Dict
 import enum
 import copy
 from abc import ABC, abstractmethod
 
 from dcw.config import get_config
 from dcw.logger import logger
+from pprint import pprint as pp
+from dcw.utils import template_env_vars
 
 # ----------------------------------
 # DCW CORE
@@ -22,11 +24,15 @@ class DCWObject(ABC):
 
 
 class DCWEvent(object):
-    def __init__(self):
+    def __init__(self, name: str = None) -> None:
+        self.__name = name
         self.__eventhandlers = []
 
     def __iadd__(self, handler):
-        self.__eventhandlers.append(handler)
+        if isinstance(handler, DCWEvent):
+            self.__eventhandlers.extend(handler.__eventhandlers)
+        else:
+            self.__eventhandlers.append(handler)
         return self
 
     def __isub__(self, handler):
@@ -42,35 +48,68 @@ class DCWGroup:
     def __init__(self, name: str, objs: [DCWObject] = None) -> None:
         self.name = name
         self.objs = {s.name: s for s in objs} if objs is not None else {}
+        self.__objs_iterable = []
 
     def add_obj(self, svc: DCWObject):
-        """Add a service to this service group overwriting any existing service with the same name"""
+        """Add a object to this object group overwriting any existing object with the same name"""
         self.objs[svc.name] = svc
 
     def remove_obj(self, svc_name: str):
-        """Remove a service from this service group if it exists"""
+        """Remove a object from this object group if it exists"""
         if svc_name in self.objs:
             del self.objs[svc_name]
 
     def get_obj(self, svc_name: str):
-        """Get a service from this service group if it exists"""
+        """Get a object from this object group if it exists"""
         return copy.deepcopy(self.objs[svc_name]) if svc_name in self.objs else None
+
+    def __objs(self):
+        return [self.get_obj(s) for s in self.objs.keys()]
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, DCWGroup) and self.name == __value.name and self.objs == __value.objs
 
+    def __iter__(self):
+        self.__objs_iterable = self.__objs()
+        return iter(self.__objs_iterable)
+
+    def __next__(self):
+        return next(self.__objs_iterable)
+
+    def __getitem__(self, key):
+        return self.get_obj(key)
+
+    def __iadd__(self, obj):
+        if obj is None:
+            return self
+        elif isinstance(obj, DCWObject):
+            self.add_obj(obj)
+        elif isinstance(obj, DCWGroup):
+            for o in obj:
+                self.add_obj(o)
+        return self
+
+    def __isub__(self, obj):
+        if obj is None:
+            return self
+        elif isinstance(obj, DCWObject):
+            self.remove_obj(obj.name)
+        elif isinstance(obj, DCWGroup):
+            for o in obj:
+                self.remove_obj(o.name)
+        return self
+
+    def __len__(self):
+        return len(self.objs)
+
 
 class DCWGroupIO(ABC):
-    def __init__(self, id: str, group_path: str) -> None:
+    def __init__(self, id: str, group_root_path: str) -> None:
         self.id = id
-        self.group_path = group_path
+        self.group_root_path = group_root_path
 
     @abstractmethod
     def import_group(self) -> DCWGroup:
-        pass
-
-    @abstractmethod
-    def export_group(self, svc_group: DCWGroup) -> None:
         pass
 
 
@@ -169,6 +208,33 @@ class DCWService(DCWObject):
             **config
         }
         self.__set_from_config()
+
+    def get_global_envs(self):
+        data = self.as_dict()
+        all_envs = []
+        # template_env_vars
+        queue = [data]
+
+        while len(queue) > 0:
+            d = queue.pop(0)
+            for k in d:
+                if isinstance(d[k], str):
+                    all_envs.extend(template_env_vars(d[k]))
+                elif isinstance(d[k], list):
+                    for v in d[k]:
+                        if isinstance(v, str):
+                            all_envs.extend(template_env_vars(v))
+                        if isinstance(v, dict):
+                            queue.append(v)
+                elif isinstance(d[k], dict):
+                    queue.append(d[k])
+
+        return all_envs
+
+    def apply_global_env(self, env_vars: dict):
+        data = self.as_dict()
+        pp(self.get_global_envs())
+        print('---------------------')
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, DCWService) and self.name == __value.name and self.as_dict() == __value.as_dict()
@@ -284,6 +350,13 @@ class DCWUnit(DCWObject):
         return svcs
 
 
+class DCWDeployment(DCWObject):
+    def __init__(self, name: str, unit_name: str, env_name: str) -> None:
+        super().__init__(name)
+        self.unit_name = unit_name
+        self.env_name = env_name
+
+
 class DCWTemplateType(str, enum.Enum):
     SVC = "svc",
     ENV = "env",
@@ -321,15 +394,13 @@ class DCWDataContext:
         self.envs_group = None
         self.units_group = None
         self.group_io = group_io
+        self.data = {}
 
     def import_group(self):
         self.group = self.group_io.import_group()
         self.svcs_group = self.__svc_group()
         self.envs_group = self.__envs_group()
         self.units_group = self.__units_group()
-
-    def export_group(self):
-        self.group_io.export_group(self.group)
 
     def __svc_group(self):
         svcs = [o if isinstance(o, DCWService)
@@ -346,89 +417,8 @@ class DCWDataContext:
                  else None for o in self.group.objs.values()]
         return DCWGroup('svc', objs=filter(lambda x: x is not None, units))
 
+    def __setitem__(self, __name: str, __value: Any) -> None:
+        self.data[__name] = __value
 
-class DCWProcessState(str, enum.Enum):
-    CREATED = "created",
-    QUEUED = "queued",
-    RUNNING = "running",
-    FINISHED = "finished",
-    FAILED = "failed"
-
-
-class DCWProcess:
-    def __init__(self, name: str, data_context: DCWDataContext = None) -> None:
-        self.name = name
-        self.data_context = data_context
-        self.state = DCWProcessState.CREATED
-        self.__on_queued = DCWEvent()
-        self.__on_running = DCWEvent()
-        self.__on_finished = DCWEvent()
-        self.__on_failed = DCWEvent()
-
-    def on_queued(self, handler):
-        self.__on_queued += handler
-
-    def remove_on_queued(self, handler):
-        self.__on_queued -= handler
-
-    def on_running(self, handler):
-        self.__on_running += handler
-
-    def remove_on_running(self, handler):
-        self.__on_running -= handler
-
-    def on_finished(self, handler):
-        self.__on_finished += handler
-
-    def remove_on_finished(self, handler):
-        self.__on_finished -= handler
-
-    def on_failed(self, handler):
-        self.__on_failed += handler
-
-    def remove_on_failed(self, handler):
-        self.__on_failed -= handler
-
-    def quee(self):
-        self.state = DCWProcessState.QUEUED
-        self.__on_queued(self)
-
-    def run(self):
-        self.state = DCWProcessState.RUNNING
-        self.__on_running(self)
-
-    def finish(self):
-        self.state = DCWProcessState.FINISHED
-        self.__on_finished(self)
-
-    def fail(self):
-        self.state = DCWProcessState.FAILED
-        self.__on_failed(self)
-
-
-class DCWProcessingQueue:
-    def __init__(self, data_context: DCWDataContext) -> None:
-        self.__data_context = data_context
-        self.__processes = []
-
-    def add_process(self, process: DCWProcess):
-        process.data_context = self.__data_context
-        self.__processes.append(process)
-        process.quee()
-        self.__data_context = process.data_context
-
-    def remove_process(self, process: DCWProcess):
-        self.__processes.remove(process)
-
-    def run(self):
-        for p in self.__processes:
-            p.data_context = self.__data_context
-            try:
-                p.run()
-                p.finish()
-                self.__data_context = p.data_context
-            except Exception as e:
-                p.fail()
-                self.__data_context = p.data_context
-                return
-  
+    def __getitem__(self, __name: str) -> Any:
+        return self.data[__name]

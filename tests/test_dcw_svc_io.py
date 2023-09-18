@@ -10,4 +10,4 @@ def test_new_service_importer():
             return super().export_group(svc_group)
     
     importer = TestImporter('test', get_config('DCW_SVCS_DIR'))
-    assert importer.group_path == get_config('DCW_SVCS_DIR')
+    assert importer.group_root_path == get_config('DCW_SVCS_DIR')

@@ -31,3 +31,9 @@ def test_get_svc():
     svc_group = DCWGroup('test', objs=[svc])
     assert svc_group.get_obj('test') == svc
     assert svc_group.get_obj('test2') == None
+
+def test_iterate_svcs():
+    svc = DCWService('test')
+    svc_group = DCWGroup('test', objs=[svc])
+    for svc in svc_group:
+        assert svc.name == 'test'

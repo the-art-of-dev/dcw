@@ -10,5 +10,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+      POSTGRES_SECRET: ${POSTGRES_SECRET}
+    ports:
+      - 5432:5432
     networks:
       - test-net

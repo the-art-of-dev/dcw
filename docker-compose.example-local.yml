@@ -1,0 +1,27 @@
+name: dcw
+services:
+  db:
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SECRET: testsecret
+      POSTGRES_USER: postgres
+    image: postgres:9.6
+    labels:
+      kompose.image-pull-policy: Neverc
+    networks:
+      test-net: null
+    ports:
+    - mode: ingress
+      target: 5432
+      published: "5432"
+      protocol: tcp
+  web:
+    environment:
+      MY_VAR: my-service
+    image: nginx:1.17.8-alpine
+    networks:
+      test-net: null
+networks:
+  test-net:
+    name: dcw_test-net
