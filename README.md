@@ -76,3 +76,19 @@ deployment/execution environments work but to create clear interface between mem
 
 - Docker compose like (docker-compose)
 - Kubernetes like (kubectl)
+
+
+## Development
+
+SETUP
+```
+python3 -m venv .
+source source ./bin/activate
+export PYTHONPATH="$(pwd)"
+pip install -r requirements.txt
+```
+
+RUN
+```
+python dcw/cli.py
+```
