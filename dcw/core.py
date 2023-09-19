@@ -18,6 +18,31 @@ from dcw.utils import template_env_vars
 # ----------------------------------
 
 
+class DockerComposeWrapper:
+    def __init__(self, text: str) -> None:
+        self.text = str
+        self.config = yaml.safe_load(self.text)
+
+    def validate(self):
+        pass
+
+class DCWService():
+    def __init__(self) -> None:
+        self.deployment_type = None
+        self.build_type = None
+        self.migration_type = None
+        self.wrapper = DockerComposeWrapper()
+    
+    def deploy():
+        pass
+    
+    def revert():
+        pass
+
+    def build():
+        pass        
+
+
 class DCWObject(ABC):
     def __init__(self, name: str) -> None:
         self.name = name
@@ -351,10 +376,17 @@ class DCWUnit(DCWObject):
 
 
 class DCWDeployment(DCWObject):
-    def __init__(self, name: str, unit_name: str, env_name: str) -> None:
+    def __init__(self, name: str, deployment_pairs: [(str, str)]) -> None:
         super().__init__(name)
-        self.unit_name = unit_name
-        self.env_name = env_name
+        self.deployment_pairs = deployment_pairs
+
+class DCWMigration():
+    def __init__(self, name, type) -> None:
+        pass
+    
+class DCWDeploymentConfig():
+    def __init__(self) -> None:
+        pass
 
 
 class DCWTemplateType(str, enum.Enum):
