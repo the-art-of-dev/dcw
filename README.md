@@ -81,14 +81,14 @@ deployment/execution environments work but to create clear interface between mem
 ## Development
 
 SETUP
-```
+```bash
 python3 -m venv .
-source source ./bin/activate
+source bin/activate # or source Scripts/activate
 export PYTHONPATH="$(pwd)"
 pip install -r requirements.txt
 ```
 
 RUN
-```
+```bash
 python dcw/cli.py
 ```
