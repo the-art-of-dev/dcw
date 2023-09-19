@@ -3,6 +3,10 @@ from dcw.environment import DCWEnv
 from dcw.unit import DCWUnit
 import os
 import yaml
+from dcw.utils import flatten
+from pprint import pprint as pp
+import shutil
+import subprocess
 
 
 class DCWDeployment:
@@ -55,9 +59,74 @@ def import_deployments_from_dir(dir_path: str) -> dict[str, DCWDeployment]:
     return depls
 
 
-def export_deployment_configuration(dir_path: str, deployment: DCWDeployment, config: dict[str, DCWService]) -> None:
-    export_dir = os.path.join(dir_path, deployment.name, deployment.type)
+def get_depl_config_path(dir_path: str, deployment: DCWDeployment):
+    return os.path.join(dir_path, deployment.name, 'depl_config.yaml')
+
+
+def export_deployment_configuration(dir_path: str, deployment: DCWDeployment, config: dict[str, DCWService]) -> str:
+    depl_config_path = get_depl_config_path(dir_path, deployment)
+    export_dir = os.path.dirname(depl_config_path)
     if not os.path.exists(export_dir):
         os.makedirs(export_dir)
-    with open(os.path.join(export_dir, 'depl_config.yaml'), 'w') as f:
+    with open(depl_config_path, 'w') as f:
         yaml.safe_dump(config, f)
+    return depl_config_path
+
+
+def make_dc_deployment(depl_config_path: str):
+    depl_config_dir = os.path.dirname(depl_config_path)
+    depl_config = {'services': {}, 'networks': {}}
+    with open(depl_config_path) as f:
+        depl_config['services'] = yaml.safe_load(f)
+    depl_config['networks'] = {nn: {} for nn in set(flatten(
+        [depl_config['services'][sn]['networks'] for sn in depl_config['services']]))}
+
+    dc_depl_path = os.path.join(depl_config_dir, 'docker-compose.yml')
+    with open(dc_depl_path, 'w') as f:
+        yaml.safe_dump(depl_config, f)
+
+
+def make_k8s_deployment(depl_config_path: str):
+    make_dc_deployment(depl_config_path)
+    depl_config_dir = os.path.dirname(depl_config_path)
+    k8s_depl_dir = os.path.join(depl_config_dir, 'k8s')
+    if os.path.exists(k8s_depl_dir):
+        shutil.rmtree(k8s_depl_dir)
+    os.makedirs(k8s_depl_dir)
+    proc = subprocess.run(['kompose', 'convert', '--out', 'k8s'],
+                          cwd=depl_config_dir, capture_output=True, text=True)
+    if proc.stderr:
+        print(proc.stderr)
+        return
+
+
+def upgrade_k8s_deployment(depl_config_path: str):
+    if not os.path.exists(depl_config_path):
+        return
+
+    depl_config = {}
+    with open(depl_config_path) as f:
+        depl_config = yaml.safe_load(f)
+
+    depl_config_dir = os.path.dirname(depl_config_path)
+    k8s_depl_dir = os.path.join(depl_config_dir, 'k8s')
+    if not os.path.exists(k8s_depl_dir):
+        return
+
+    for file_name in os.listdir(k8s_depl_dir):
+        print(file_name)
+        k8s_config_path = os.path.join(k8s_depl_dir, file_name)
+        k8s_config = {}
+        with open(k8s_config_path) as f:
+            k8s_config = yaml.safe_load(f)
+        if 'kind' not in k8s_config:
+            continue
+        kind = k8s_config['kind']
+        name: str = k8s_config['metadata']['name']
+        if name.strip('-tcp') not in depl_config:
+            continue
+        svc_config = depl_config[name.strip('-tcp')]
+        if 'rich-kompose.service.loadbalancerip' in svc_config['labels'] and kind.upper() == 'SERVICE':
+            k8s_config['spec']['loadBalancerIP'] = svc_config['labels']['rich-kompose.service.loadbalancerip']
+        with open(k8s_config_path, 'w') as f:
+            yaml.safe_dump(k8s_config, f)

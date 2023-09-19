@@ -6,7 +6,10 @@ db:
     POSTGRES_USER: postgres
   image: postgres:9.6
   labels:
-    kompose.image-pull-policy: Neverc
+    kompose.image-pull-policy: Never
+    kompose.service.type: loadbalancer
+    random-label: random-value
+    rich-kompose.service.loadbalancerip: 10.10.10.11
   networks:
   - test-net
   ports:

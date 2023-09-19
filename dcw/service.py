@@ -106,7 +106,6 @@ def import_service_from_file(file_path: str) -> DCWService:
 
 def import_services_from_dir(dir_path: str) -> dict[str, DCWService]:
     svcs = {}
-    print(dir_path)
     for file_name in os.listdir(dir_path):
         svc = import_service_from_file(os.path.join(dir_path, file_name))
         if svc is not None:

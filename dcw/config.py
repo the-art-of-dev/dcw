@@ -13,6 +13,7 @@ class DCWMagicConfigs(str, enum.Enum):
     DCW_DEPLS_PATH = 'DCW_DEPLS_PATH'
     DCW_DEPL_CONFIGS_PATH = 'DCW_DEPL_CONFIGS_PATH'
     DCW_CLI_VERBOSE = 'DCW_CLI_VERBOSE'
+    DCW_VAULT_PATH = 'DCW_VAULT_PATH'
 
 
 class DCWConfig:
@@ -24,7 +25,8 @@ class DCWConfig:
             DCWMagicConfigs.DCW_UNITS_PATH: 'dcw-units',
             DCWMagicConfigs.DCW_TMPLS_PATH: 'dcw-tmpls',
             DCWMagicConfigs.DCW_DEPLS_PATH: 'dcw-depls',
-            DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH: 'depl-configs'
+            DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH: 'depl-configs',
+            DCWMagicConfigs.DCW_VAULT_PATH: 'dcw-vault',
         }
         if config is not None:
             self.__apply_config(config)
@@ -58,12 +60,15 @@ class DCWConfig:
 
 def import_config_from_file(file_path: str):
     file_name = os.path.basename(file_path)
+    file_dir = os.path.dirname(file_path)
     if not file_name.startswith('.dcwrc') and not file_name.endswith('.yaml'):
         return None
     if not os.path.exists(file_path):
         return DCWConfig()
     with open(file_path, 'r') as f:
         data = yaml.safe_load(f)
+        if 'dcw_rc' in data:
+            return import_config_from_file(os.path.join(file_dir, data['dcw_rc']))
         if 'config' in data:
             return DCWConfig(data['config'])
         return None

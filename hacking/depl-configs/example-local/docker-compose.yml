@@ -1,0 +1,27 @@
+networks:
+  test-net: {}
+services:
+  db:
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SECRET: testsecret
+      POSTGRES_USER: postgres
+    image: postgres:9.6
+    labels:
+      kompose.image-pull-policy: Never
+      kompose.service.type: loadbalancer
+      random-label: random-value
+      rich-kompose.service.loadbalancerip: 10.10.10.11
+    networks:
+    - test-net
+    ports:
+    - 5432:5432
+  web:
+    environment:
+      MY_VAR: my-service
+    image: nginx:1.17.8-alpine
+    labels: {}
+    networks:
+    - test-net
+    ports: []

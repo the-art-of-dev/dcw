@@ -1,36 +1,17 @@
 import typer
 import os
-# from dotenv import dotenv_values
-# from prompt_toolkit.shortcuts import checkboxlist_dialog
-# from prompt_toolkit.shortcuts import radiolist_dialog
-# from prompt_toolkit.shortcuts import input_dialog
-# import prettytable
-# from typing import List, Optional
-
-# from typing_extensions import Annotated
 from pprint import pprint as pp
 import yaml
-
-# from dcw.core import DCWUnit, DCWDataContext
-# from dcw.config import get_config, set_config
-# from dcw.infra import DCWGroupFileIO, export_dc_deployment
-# from dcw.utils import is_tool
-
 import enum
-
-# from dcw.logger import logger
 
 from dcw.config import import_config_from_file, DCWMagicConfigs
 from dcw.context import DCWContext
-from dcw.deployment import export_deployment_configuration
+from dcw.deployment import export_deployment_configuration, upgrade_k8s_deployment, make_k8s_deployment
 import prettytable
-from dcw.security import encrypt_file, decrypt_file
+from dcw.vault import encrypt_file, decrypt_file
 
 dcw_config = import_config_from_file('.dcwrc.yaml')
 dcw_context = None
-
-# dcw_context = DCWC
-
 
 class DCWUnitBundleOutputType(str, enum.Enum):
     DOCKER_COMPOSE = "dc"
@@ -56,12 +37,10 @@ svc_app = typer.Typer()
 env_app = typer.Typer()
 unit_app = typer.Typer()
 depl_app = typer.Typer()
-# tmpl_app = typer.Typer()
 app.add_typer(svc_app, name="svc")
 app.add_typer(env_app, name="env")
 app.add_typer(unit_app, name="unit")
 app.add_typer(depl_app, name="depl")
-# app.add_typer(tmpl_app, name="tmpl")
 
 
 def table_print_columns(data_columns: [(str, [str])]):
@@ -80,14 +59,14 @@ def env_list():
         ('NAME', [envs[e].name for e in envs]),
     ])
 
-@env_app.command("encrypt")
-def env_encrypt():
-    env = dcw_context.environments['example-local']
-    encrypt_file(yaml.safe_dump(env.as_dict()), os.path.join('example-local.crypt'), 'krka1312')
+# @env_app.command("encrypt")
+# def env_encrypt():
+#     env = dcw_context.environments['example-local']
+#     encrypt_file(yaml.safe_dump(env.as_dict()), os.path.join('example-local.crypt'), 'krka1312')
 
-@env_app.command("decrypt")
-def env_decrypt():
-    print(decrypt_file(os.path.join('example-local.crypt'), 'krka1312'))
+# @env_app.command("decrypt")
+# def env_decrypt():
+#     print(decrypt_file(os.path.join('example-local.crypt'), 'krka1312'))
 
 
 @svc_app.command("list")
@@ -132,8 +111,10 @@ def depl_bundle(name: str):
     )
 
     data = {d: depl_config[d].as_dict() for d in depl_config}
-    export_deployment_configuration(
+    depl_config_path = export_deployment_configuration(
         dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, data)
+    make_k8s_deployment(depl_config_path)
+    upgrade_k8s_deployment(depl_config_path)
 
 
 if __name__ == "__main__":
