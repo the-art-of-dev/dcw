@@ -1,0 +1,6 @@
+- name: copy-file
+  hosts: localhost
+  tasks:
+    - name: Fake-copy
+      debug:
+        msg: 'Test copy'

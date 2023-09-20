@@ -1,4 +1,4 @@
-typer[all]
+click
 colorlog
 PyYAML
 python-dotenv

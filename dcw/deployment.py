@@ -7,6 +7,7 @@ from dcw.utils import flatten
 from pprint import pprint as pp
 import shutil
 import subprocess
+import sys
 
 
 class DCWDeployment:
@@ -114,7 +115,6 @@ def upgrade_k8s_deployment(depl_config_path: str):
         return
 
     for file_name in os.listdir(k8s_depl_dir):
-        print(file_name)
         k8s_config_path = os.path.join(k8s_depl_dir, file_name)
         k8s_config = {}
         with open(k8s_config_path) as f:
@@ -130,3 +130,29 @@ def upgrade_k8s_deployment(depl_config_path: str):
             k8s_config['spec']['loadBalancerIP'] = svc_config['labels']['rich-kompose.service.loadbalancerip']
         with open(k8s_config_path, 'w') as f:
             yaml.safe_dump(k8s_config, f)
+
+
+def make_deployment(dir_path: str, deployment: DCWDeployment):
+    depl_config_path = get_depl_config_path(dir_path, deployment)
+    if deployment.type == 'dc':
+        make_dc_deployment(depl_config_path)
+    elif deployment.type == 'k8s':
+        make_k8s_deployment(depl_config_path)
+        upgrade_k8s_deployment(depl_config_path)
+    else:
+        raise Exception('Deployment type not supported')
+
+
+def execute_deployment_command(depl_dir_path: str, deployment: DCWDeployment, command: [str]):
+    commands = {
+        'dc': 'docker-compose',
+        'k8s': 'kubectl'
+    }
+
+    depl_config = get_depl_config_path(depl_dir_path, deployment)
+    depl_config_dir = os.path.dirname(depl_config)
+
+    subprocess.run([commands[deployment.type], *command],
+                   stdout=sys.stdout,
+                   stderr=sys.stderr,
+                   cwd=depl_config_dir)

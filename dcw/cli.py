@@ -1,46 +1,53 @@
-import typer
 import os
+import click
 from pprint import pprint as pp
-import yaml
 import enum
+from typing import List
+import prettytable
 
 from dcw.config import import_config_from_file, DCWMagicConfigs
 from dcw.context import DCWContext
-from dcw.deployment import export_deployment_configuration, upgrade_k8s_deployment, make_k8s_deployment
-import prettytable
-from dcw.vault import encrypt_file, decrypt_file
+from dcw.deployment import export_deployment_configuration, make_deployment, execute_deployment_command
 
-dcw_config = import_config_from_file('.dcwrc.yaml')
-dcw_context = None
+dcw_context: DCWContext = None
+
 
 class DCWUnitBundleOutputType(str, enum.Enum):
     DOCKER_COMPOSE = "dc"
     KUBERNETES = "k8s"
 
 
-app = typer.Typer(
-    help="Docker Compose Wrapper",
-)
-
-
-@app.callback()
-def main(config: str = None):
-    global dcw_config, dcw_context
-
-    if config is not None:
-        dcw_config = import_config_from_file(config)
-
+@click.group()
+@click.option('--config', default='.dcwrc.yaml')
+def app(config: str):
+    global dcw_context
+    dcw_config = import_config_from_file(config)
     dcw_context = DCWContext(dcw_config)
 
+@click.group('svc')
+def svc_app():
+    pass
 
-svc_app = typer.Typer()
-env_app = typer.Typer()
-unit_app = typer.Typer()
-depl_app = typer.Typer()
-app.add_typer(svc_app, name="svc")
-app.add_typer(env_app, name="env")
-app.add_typer(unit_app, name="unit")
-app.add_typer(depl_app, name="depl")
+
+@click.group('env')
+def env_app():
+    pass
+
+
+@click.group('unit')
+def unit_app():
+    pass
+
+
+@click.group('depl')
+def depl_app():
+    pass
+
+
+app.add_command(svc_app)
+app.add_command(env_app)
+app.add_command(unit_app)
+app.add_command(depl_app)
 
 
 def table_print_columns(data_columns: [(str, [str])]):
@@ -113,9 +120,21 @@ def depl_bundle(name: str):
     data = {d: depl_config[d].as_dict() for d in depl_config}
     depl_config_path = export_deployment_configuration(
         dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, data)
-    make_k8s_deployment(depl_config_path)
-    upgrade_k8s_deployment(depl_config_path)
+    make_deployment(depl_config_path)
 
+
+@app.command('x', context_settings={"ignore_unknown_options": True})
+@click.argument('name')
+@click.argument('args', nargs=-1)
+def execute_depl(name: str, args: [str]):
+    depl = dcw_context.deployments[name]
+    execute_deployment_command(
+        dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, args)
+
+# @app.command('task', context_settings={"ignore_unknown_options": True})
+# @click.argument('args', nargs=-1)
+# def execute_task(args: [str]):
+#     execute_ansible_task('./hacking/dcw-tasks/copy_file.yaml', list(args))
 
 if __name__ == "__main__":
     app()
