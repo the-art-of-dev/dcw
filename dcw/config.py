@@ -4,7 +4,7 @@ import yaml
 from pprint import pprint as pp
 
 
-class DCWMagicConfigs(str, enum.Enum):
+class DCWConfigMagic(str, enum.Enum):
     DCW_ROOT = 'DCW_ROOT'
     DCW_SVCS_PATH = 'DCW_SVCS_PATH'
     DCW_UNITS_PATH = 'DCW_UNITS_PATH'
@@ -14,19 +14,24 @@ class DCWMagicConfigs(str, enum.Enum):
     DCW_DEPL_CONFIGS_PATH = 'DCW_DEPL_CONFIGS_PATH'
     DCW_CLI_VERBOSE = 'DCW_CLI_VERBOSE'
     DCW_VAULT_PATH = 'DCW_VAULT_PATH'
+    DCW_TASKS_PATH = 'DCW_TASKS_PATH'
+    DCW_TENANT = 'DCW_TENANT'
+    DCW_TENANT_DEPL_ROOT = 'DCW_TENANT_DEPL_ROOT'
 
 
 class DCWConfig:
     def __init__(self, config: dict = None) -> None:
         self.__dict = {
-            DCWMagicConfigs.DCW_ROOT: '.',
-            DCWMagicConfigs.DCW_SVCS_PATH: 'dcw-svcs',
-            DCWMagicConfigs.DCW_ENVS_PATH: 'dcw-envs',
-            DCWMagicConfigs.DCW_UNITS_PATH: 'dcw-units',
-            DCWMagicConfigs.DCW_TMPLS_PATH: 'dcw-tmpls',
-            DCWMagicConfigs.DCW_DEPLS_PATH: 'dcw-depls',
-            DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH: 'depl-configs',
-            DCWMagicConfigs.DCW_VAULT_PATH: 'dcw-vault',
+            DCWConfigMagic.DCW_ROOT: '.',
+            DCWConfigMagic.DCW_SVCS_PATH: 'dcw-svcs',
+            DCWConfigMagic.DCW_ENVS_PATH: 'dcw-envs',
+            DCWConfigMagic.DCW_UNITS_PATH: 'dcw-units',
+            DCWConfigMagic.DCW_TMPLS_PATH: 'dcw-tmpls',
+            DCWConfigMagic.DCW_DEPLS_PATH: 'dcw-depls',
+            DCWConfigMagic.DCW_DEPL_CONFIGS_PATH: 'depl-configs',
+            DCWConfigMagic.DCW_VAULT_PATH: 'dcw-vault',
+            DCWConfigMagic.DCW_TENANT: 'local',
+            DCWConfigMagic.DCW_TENANT_DEPL_ROOT: 'tenants'
         }
         if config is not None:
             self.__apply_config(config)
@@ -36,7 +41,7 @@ class DCWConfig:
             raise Exception(f'Invalid config key: {key}')
 
         if key.endswith('_PATH'):
-            return os.path.join(self.__dict[DCWMagicConfigs.DCW_ROOT], self.__dict[key])
+            return os.path.join(self.__dict[DCWConfigMagic.DCW_ROOT], self.__dict[key])
 
         return self.__dict[key]
 

@@ -1,0 +1,20 @@
+- name: local
+  deployments:
+    - unit: infra
+      env: local
+      type: dc
+      tasks:
+        - first_task
+        - second_task
+    - unit: example
+      env: local
+      type: k8s
+      tasks:
+        - second_task
+- name: aod
+  deployments:
+    - unit: system
+      env: system-staging
+      type: k8s
+      tasks:
+        - first_task

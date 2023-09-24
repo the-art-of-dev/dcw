@@ -16,9 +16,9 @@ class DCWUnit:
                 raise Exception(
                     f'Service {svc_name} not found')
 
+            svc_group[svc_name].apply_global_env(env.global_envs)
             if svc_name in env.service_configs:
                 svc_group[svc_name].apply_config(env.service_configs[svc_name])
-            svc_group[svc_name].apply_global_env(env.global_envs)
             svcs[svc_name] = svc_group[svc_name]
         return svcs
 

@@ -1,6 +1,7 @@
 from dcw.service import DCWService
 from dcw.environment import DCWEnv
 from dcw.unit import DCWUnit
+from dcw.task import DCWTask
 import os
 import yaml
 from dcw.utils import flatten
@@ -8,71 +9,114 @@ from pprint import pprint as pp
 import shutil
 import subprocess
 import sys
+from dcw.context import DCWContext
+from dcw.config import DCWConfigMagic
+
+
+class DCWDeploymentSpec:
+    def __init__(self,
+                 name: str,
+                 type: str,
+                 unit: str,
+                 services: dict,
+                 env: dict,
+                 host_list: [str]) -> None:
+        self.name = name
+        self.type = type
+        self.unit = unit
+        self.host_list = host_list
+        self.services = services
+        self.environment = env
+
+    def as_dict(self):
+        return {
+            'name': self.name,
+            'type': self.type,
+            'unit': self.unit,
+            'services': self.services,
+            'environment': self.environment,
+            'host_list': self.host_list,
+        }
+
+    @classmethod
+    def from_dict(cfg_dict: dict):
+        return DCWDeploymentSpec(
+            cfg_dict['name'],
+            cfg_dict['type'],
+            cfg_dict['unit'],
+            cfg_dict['services'],
+            cfg_dict['env'],
+            cfg_dict['host_list']
+        )
+
+
+def export_deployment_spec(spec_path: str, depl_sepc: DCWDeploymentSpec):
+    export_dir = os.path.dirname(spec_path)
+    if not os.path.exists(export_dir):
+        os.makedirs(export_dir)
+    with open(spec_path, 'w') as f:
+        yaml.safe_dump(depl_sepc.as_dict(), f)
+    return spec_path
+
+
+def import_deployment_spec(spec_path: str) -> DCWDeploymentSpec:
+    if not os.path.exists(spec_path):
+        raise Exception(f'Dployment specification {spec_path} not found!')
+    with open(spec_path, 'r') as f:
+        return DCWDeploymentSpec.from_dict(yaml.safe_load(f))
 
 
 class DCWDeployment:
-    def __init__(self, name: str, type: str, depl_pairs: [(str, str)]) -> None:
+    def __init__(self,
+                 name: str,
+                 type: str,
+                 unit: DCWUnit,
+                 serivce_map: [str, DCWService],
+                 env: DCWEnv,
+                 host_list: [str]) -> None:
         self.name = name
-        self.depl_paris = depl_pairs
         self.type = type
+        self.unit = unit
+        self.serivce_map = serivce_map
+        self.env = env
+        self.host_list = host_list
 
-    def create_deployment_config(self, svc_group: dict[str, DCWService], env_group: dict[str, DCWEnv], unit_group: dict[str, DCWUnit]) -> dict[str, DCWService]:
-        depl_config = {}
-        for (unit_name, env_name) in self.depl_paris:
-            if unit_name not in unit_group:
-                raise Exception(f'Unit {unit_name} not found!')
-            if env_name not in env_group:
-                raise Exception(f'Environment {env_name} not found!')
-
-            unit = unit_group[unit_name]
-            env = env_group[env_name]
-            depl_config = {
-                **depl_config,
-                **unit.apply_env(env, svc_group)
-            }
-        return depl_config
+    def make_deployment_spec(self):
+        return DCWDeploymentSpec(
+            self.name,
+            self.type,
+            self.unit.name,
+            self.unit.apply_env(self.env, self.serivce_map),
+            self.env.as_dict(),
+            self.host_list
+        )
 
 
-def import_deployment_from_file(file_path: str) -> DCWDeployment:
-    file_name = os.path.basename(file_path)
-    file_name_parts = file_name.split('.')
-    if file_name_parts.pop() != 'txt':
-        return None
-    if len(file_name_parts) <= 1:
-        return None
-    type = file_name_parts.pop(0)
-    name = '.'.join(file_name_parts)
-    depl_pairs = []
-    with open(file_path, 'r') as f:
-        for line in f:
-            depl_pairs.append(tuple(line.strip().split(':')))
-    return DCWDeployment(name, type, depl_pairs)
+# def import_deployment_from_file(file_path: str) -> DCWDeployment:
+#     file_name = os.path.basename(file_path)
+#     file_name_parts = file_name.split('.')
+#     if file_name_parts.pop() != 'txt':
+#         return None
+#     if len(file_name_parts) <= 1:
+#         return None
+#     type = file_name_parts.pop(0)
+#     name = '.'.join(file_name_parts)
+#     depl_pairs = []
+#     with open(file_path, 'r') as f:
+#         for line in f:
+#             depl_pairs.append(tuple(line.strip().split(':')))
+#     return DCWDeployment(name, type, depl_pairs)
 
 
-def import_deployments_from_dir(dir_path: str) -> dict[str, DCWDeployment]:
-    depls = {}
-    for file_name in os.listdir(dir_path):
-        d = import_deployment_from_file(os.path.join(dir_path, file_name))
-        if d is None:
-            continue
-        depls[d.name] = d
+# def import_deployments_from_dir(dir_path: str) -> dict[str, DCWDeployment]:
+#     depls = {}
+#     for file_name in os.listdir(dir_path):
+#         d = import_deployment_from_file(os.path.join(dir_path, file_name))
+#         if d is None:
+#             continue
+#         depls[d.name] = d
 
-    return depls
-
-
-def get_depl_config_path(dir_path: str, deployment: DCWDeployment):
-    return os.path.join(dir_path, deployment.name, 'depl_config.yaml')
-
-
-def export_deployment_configuration(dir_path: str, deployment: DCWDeployment, config: dict[str, DCWService]) -> str:
-    depl_config_path = get_depl_config_path(dir_path, deployment)
-    export_dir = os.path.dirname(depl_config_path)
-    if not os.path.exists(export_dir):
-        os.makedirs(export_dir)
-    with open(depl_config_path, 'w') as f:
-        yaml.safe_dump(config, f)
-    return depl_config_path
-
+#     return depls
 
 def make_dc_deployment(depl_config_path: str):
     depl_config_dir = os.path.dirname(depl_config_path)
@@ -132,27 +176,117 @@ def upgrade_k8s_deployment(depl_config_path: str):
             yaml.safe_dump(k8s_config, f)
 
 
-def make_deployment(dir_path: str, deployment: DCWDeployment):
-    depl_config_path = get_depl_config_path(dir_path, deployment)
-    if deployment.type == 'dc':
+# def make_deployment(dir_path: str, deployment: DCWDeployment):
+#     depl_config_path = get_depl_config_path(dir_path, deployment)
+#     if deployment.type == 'dc':
+#         make_dc_deployment(depl_config_path)
+#     elif deployment.type == 'k8s':
+#         make_k8s_deployment(depl_config_path)
+#         upgrade_k8s_deployment(depl_config_path)
+#     else:
+#         raise Exception('Deployment type not supported')
+
+
+# def execute_deployment_command(depl_dir_path: str, deployment: DCWDeployment, command: [str]):
+#     commands = {
+#         'dc': 'docker-compose',
+#         'k8s': 'kubectl'
+#     }
+
+#     depl_config = get_depl_config_path(depl_dir_path, deployment)
+#     depl_config_dir = os.path.dirname(depl_config)
+
+#     subprocess.run([commands[deployment.type], *command],
+#                    stdout=sys.stdout,
+#                    stderr=sys.stderr,
+#                    cwd=depl_config_dir)
+
+
+class DCWTenantDeploymentConfig:
+    def __init__(self) -> None:
+        self.name = ''
+        self.type = ''
+        self.unit = ''
+        self.services = ''
+        self.enironment = ''
+        self.host_list = ''
+        self.tasks = ''
+
+
+class DCWTenant:
+    def __init__(self, name: str, depl_cfgs: dict[str, DCWTenantDeploymentConfig], ctx: DCWContext) -> None:
+        self.name = name
+        self.tenant_root = os.path.join(
+            ctx.config[DCWConfigMagic.DCW_TENANT_DEPL_ROOT], name)
+        self.depl_map = {c: self.__convert_dcfg(
+            depl_cfgs[c], ctx) for c in depl_cfgs}
+
+    def __convert_dcfg(self, cfg: DCWTenantDeploymentConfig, ctx: DCWContext) -> DCWDeployment:
+        unit = ctx.units[cfg.unit]
+        svcs = [ctx.services[s] for s in unit.s]
+        env = ctx.environments[cfg.enironment]
+        return DCWDeployment(cfg.name,
+                             cfg.type,
+                             unit,
+                             svcs,
+                             env,
+                             cfg.host_list)
+
+    # ---- DEPLOYMENTS -----
+
+    def __make_docker_compose_deployment(self, depl_spec: DCWDeploymentSpec):
+        dc_depl_path = os.path.join(
+            self.tenant_root, depl_spec.name, 'docker-compose.yml')
+        dc_depl_dir = os.path.dirname(dc_depl_path)
+        if not os.path.exists(dc_depl_dir):
+            os.makedirs(dc_depl_dir)
+
+        dc_depl = {'services': depl_spec.services, 'networks': {}}
+        dc_depl['networks'] = {nn: {} for nn in set(flatten(
+            [dc_depl['services'][sn]['networks'] for sn in dc_depl['services']]))}
+        with open(dc_depl_path, 'w') as f:
+            yaml.safe_dump(dc_depl, f)
+
+    def __convert_dc_to_k8s_deployment():
+        pass
+
+    def __make_k8s_deployment(self, depl_spec: DCWDeploymentSpec):
         make_dc_deployment(depl_config_path)
-    elif deployment.type == 'k8s':
-        make_k8s_deployment(depl_config_path)
-        upgrade_k8s_deployment(depl_config_path)
-    else:
-        raise Exception('Deployment type not supported')
+        depl_config_dir = os.path.dirname(depl_config_path)
+        k8s_depl_dir = os.path.join(depl_config_dir, 'k8s')
+        if os.path.exists(k8s_depl_dir):
+            shutil.rmtree(k8s_depl_dir)
+        os.makedirs(k8s_depl_dir)
+        proc = subprocess.run(['kompose', 'convert', '--out', 'k8s'],
+                              cwd=depl_config_dir, capture_output=True, text=True)
+        if proc.stderr:
+            print(proc.stderr)
+            return
 
+    def make_deployment(self, depl_names: [str]):
+        maker_map = {
+            'dc': self.__make_docker_compose_deployment,
+            'k8s': self.__make_k8s_deployment
+        }
 
-def execute_deployment_command(depl_dir_path: str, deployment: DCWDeployment, command: [str]):
-    commands = {
-        'dc': 'docker-compose',
-        'k8s': 'kubectl'
-    }
+        for dn in depl_names:
+            if dn not in self.depl_map:
+                raise Exception(f'Deployment {dn} not exist')
+            depl = self.depl_map[dn]
+            if depl.type not in maker_map:
+                raise Exception(f'Deployment type {depl.type} not supported')
+            maker_map[depl.type](depl)
 
-    depl_config = get_depl_config_path(depl_dir_path, deployment)
-    depl_config_dir = os.path.dirname(depl_config)
+    def execute_deployment_command(self):
+        pass
 
-    subprocess.run([commands[deployment.type], *command],
-                   stdout=sys.stdout,
-                   stderr=sys.stderr,
-                   cwd=depl_config_dir)
+    # ---- TASKS ----
+
+    def run_task(self):
+        pass
+
+    def run_deployment_task(self):
+        pass
+
+    def run_deployment_svc_task(self):
+        pass

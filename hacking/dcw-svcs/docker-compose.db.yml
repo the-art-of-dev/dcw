@@ -15,3 +15,10 @@ services:
       - 5432:5432
     networks:
       - test-net
+    labels:
+      - dcw.tasks.*.db_user=test
+      - dcw.tasks.*.db_password=test
+      - dcw.tasks.*.db_name=test
+      - dcw.tasks.init_db=true
+      - dcw.tasks.init_schema.db_name=testdb
+      

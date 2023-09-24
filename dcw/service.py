@@ -90,7 +90,7 @@ class DCWService:
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, DCWService) and self.name == __value.name and self.as_dict() == __value.as_dict()
-
+    
 
 def import_service_from_file(file_path: str) -> DCWService:
     file_name = os.path.basename(file_path)

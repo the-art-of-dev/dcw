@@ -1,54 +1,131 @@
+# DCW CLI Commands
 
-
-```
-dcw svc list
-dcw svc show svc-name
-dcw svc path svc-name
-dcw svc new
+```bash
+dcw
 ```
 
------
+| Option name | Option description | Default |
+| :---------: | ------------------ | :-----: |
+| `--tenant`  | Specify tenant     |  local  |
+|             |                    |         |
 
-```
-dcw env list
-dcw env show env-name
-dcw env path env-name
-dcw env new
-```
+## svc | service
 
------
-
-```
-dcw unit list
-dcw unit show unit-name
-dcw unit path unit-name
-dcw unit new
+```bash
+dcw svc [OPTIONS] (COMMAND)
 ```
 
------
+| Argument name | Argument description   |
+| :-----------: | ---------------------- |
+|   `COMMAND`   | `list`, `show`, `args` |
 
-```
-dcw depl
+## env | environment
 
-dcw depl list
-dcw depl bundle
-dcw depl new
-```
-
------
-
-```
-dcw x
-
-dcw x infra-local up -d
-dcw x --tpye=k8s infra-local apply 
-dcw x --rec infra-local up -d --name up
-dcw xr up
+```bash
+dcw env [OPTIONS] (COMMAND)
 ```
 
------
+| Argument name | Argument description |
+| :-----------: | -------------------- |
+|   `COMMAND`   | `list`, `show`       |
 
-```
-dcw [--show-pq] command [options] arg1 arg2 ...
+## unit
+
+```bash
+dcw unit [OPTIONS] (COMMAND)
 ```
 
+| Argument name | Argument description    |
+| :-----------: | ----------------------- |
+|   `COMMAND`   | `list`, `show`, `apply` |
+
+## task
+
+```bash
+dcw task [OPTIONS] (COMMAND)
+```
+
+| Argument name | Argument description   |
+| :-----------: | ---------------------- |
+|   `COMMAND`   | `list`, `show`, `args` |
+
+## tnt | tenant
+
+```bash
+dcw tnt [OPTIONS] (COMMAND)
+```
+
+| Argument name | Argument description                     |
+| :-----------: | ---------------------------------------- |
+|   `COMMAND`   | `list`, `show`, `check`, `envs`, `depls` |
+
+## depl | deployment
+
+```bash
+dcw depl [OPTIONS] (COMMAND)
+```
+
+| Argument name | Argument description                               |
+| :-----------: | -------------------------------------------------- |
+|   `COMMAND`   | `list`, `show`, `check`, `bundle`, `tasks`, `spec` |
+
+| Option name | Option description | Default |
+| :---------: | ------------------ | :-----: |
+|  `--unit`   | Specify units      |         |
+|   `--svc`   | Specify services   |         |
+|             |                    |         |
+
+## x | execute
+
+```bash
+dcw x [OPTIONS] (deployment) (command)
+```
+
+| Argument name | Argument description                                                           |
+| :-----------: | ------------------------------------------------------------------------------ |
+| `deployment`  | Specify tenant deployment(unit name)                                           |
+|   `command`   | Command to run on deployment specific cli tool (e.g.: docker-compose, kubectl) |
+
+## xs | execute-service
+
+```bash
+dcw xs [OPTIONS] (deployment) (service) (command)
+```
+
+| Argument name | Argument description                                                           |
+| :-----------: | ------------------------------------------------------------------------------ |
+| `deployment`  | Specify tenant deployment(unit name)                                           |
+|   `command`   | Command to run on deployment specific cli tool (e.g.: docker-compose, kubectl) |
+
+## r | run
+
+```bash
+dcw r [OPTIONS] (deployment) (task)
+```
+
+| Argument name | Argument description                 |
+| :-----------: | ------------------------------------ |
+| `deployment`  | Specify tenant deployment(unit name) |
+|    `task`     | Specify deployment task to run       |
+
+## rs | run-service
+
+```bash
+dcw rs [OPTIONS] (deployment) (service) (task)
+```
+
+| Argument name | Argument description                 |
+| :-----------: | ------------------------------------ |
+| `deployment`  | Specify tenant deployment(unit name) |
+|   `service`   | Specify deployment service           |
+|    `task`     | Specify deployment task to run       |
+
+## valut
+
+```bash
+dcw vault [OPTIONS] (COMMAND)
+```
+
+| Argument name | Argument description                 |
+| :-----------: | ------------------------------------ |
+|   `COMMAND`   | `list`, `show`, `encrypt`, `decrypt` |

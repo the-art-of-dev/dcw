@@ -17,39 +17,6 @@ class DCWUnitBundleOutputType(str, enum.Enum):
     KUBERNETES = "k8s"
 
 
-@click.group()
-@click.option('--config', default='.dcwrc.yaml')
-def app(config: str):
-    global dcw_context
-    dcw_config = import_config_from_file(config)
-    dcw_context = DCWContext(dcw_config)
-
-@click.group('svc')
-def svc_app():
-    pass
-
-
-@click.group('env')
-def env_app():
-    pass
-
-
-@click.group('unit')
-def unit_app():
-    pass
-
-
-@click.group('depl')
-def depl_app():
-    pass
-
-
-app.add_command(svc_app)
-app.add_command(env_app)
-app.add_command(unit_app)
-app.add_command(depl_app)
-
-
 def table_print_columns(data_columns: [(str, [str])]):
     tbl = prettytable.PrettyTable()
     for (title, items) in data_columns:
@@ -57,23 +24,35 @@ def table_print_columns(data_columns: [(str, [str])]):
     print(tbl)
 
 
-@env_app.command("list")
-def env_list():
-    """List all dcw environments"""
-    envs = dcw_context.environments
-    table_print_columns([
-        ('#', [i+1 for i in range(len(envs))]),
-        ('NAME', [envs[e].name for e in envs]),
-    ])
+@click.group()
+@click.option('--config', default='.dcwrc.yaml')
+@click.option('--tenant', default=None)
+def app(config: str, tenant: str):
+    global dcw_context
+    dcw_config = import_config_from_file(config)
+    if tenant is not None:
+        dcw_config[DCWMagicConfigs.DCW_TENANT] = tenant
+    dcw_context = DCWContext(dcw_config)
 
-# @env_app.command("encrypt")
-# def env_encrypt():
-#     env = dcw_context.environments['example-local']
-#     encrypt_file(yaml.safe_dump(env.as_dict()), os.path.join('example-local.crypt'), 'krka1312')
 
-# @env_app.command("decrypt")
-# def env_decrypt():
-#     print(decrypt_file(os.path.join('example-local.crypt'), 'krka1312'))
+@app.command('x', context_settings={"ignore_unknown_options": True})
+@click.argument('name')
+@click.argument('args', nargs=-1)
+def execute_depl(name: str, args: [str]):
+    depl = dcw_context.deployments[name]
+    execute_deployment_command(
+        dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, args)
+
+
+# ------ SEVICE ------
+
+
+@click.group('svc')
+def svc_app():
+    pass
+
+
+app.add_command(svc_app)
 
 
 @svc_app.command("list")
@@ -88,6 +67,36 @@ def svc_list():
         ('GLOBAL ENV', [svcs[s].get_global_envs() for s in svcs])
     ])
 
+# ------ ENVIRONMENT ------
+
+
+@click.group('env')
+def env_app():
+    pass
+
+
+app.add_command(env_app)
+
+
+@env_app.command("list")
+def env_list():
+    """List all dcw environments"""
+    envs = dcw_context.environments
+    table_print_columns([
+        ('#', [i+1 for i in range(len(envs))]),
+        ('NAME', [envs[e].name for e in envs]),
+    ])
+
+# ------ UNIT ------
+
+
+@click.group('unit')
+def unit_app():
+    pass
+
+
+app.add_command(unit_app)
+
 
 @unit_app.command("list")
 def unit_list(verbose: bool = False):
@@ -95,6 +104,16 @@ def unit_list(verbose: bool = False):
     table_print_columns([
         ('NAME', [u for u in dcw_context.units])
     ])
+
+# ------ DEPLOYMENT ------
+
+
+@click.group('depl')
+def depl_app():
+    pass
+
+
+app.add_command(depl_app)
 
 
 @depl_app.command("list")
@@ -123,13 +142,15 @@ def depl_bundle(name: str):
     make_deployment(depl_config_path)
 
 
-@app.command('x', context_settings={"ignore_unknown_options": True})
-@click.argument('name')
-@click.argument('args', nargs=-1)
-def execute_depl(name: str, args: [str]):
-    depl = dcw_context.deployments[name]
-    execute_deployment_command(
-        dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, args)
+# @env_app.command("encrypt")
+# def env_encrypt():
+#     env = dcw_context.environments['example-local']
+#     encrypt_file(yaml.safe_dump(env.as_dict()), os.path.join('example-local.crypt'), 'krka1312')
+
+# @env_app.command("decrypt")
+# def env_decrypt():
+#     print(decrypt_file(os.path.join('example-local.crypt'), 'krka1312'))
+
 
 # @app.command('task', context_settings={"ignore_unknown_options": True})
 # @click.argument('args', nargs=-1)

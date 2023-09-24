@@ -1,6 +1,31 @@
 config:
   DCW_ROOT: "./hacking"
 
+registries:
+  - name: private docker
+    url: 
+    username:
+    password:
+
+repositories:
+  - name: dcw-repo
+    url: 
+
+tenants:
+  local:
+    environment: local
+    deployments:
+      - name: infra
+        unit: infra
+        environment: infra-local
+        type: dc
+        tasks:
+          - init-db
+      - name: wu
+        unit: wu
+        environment: wu-local
+        type: dc
+
 vault:
   environments:
     - example-secure
