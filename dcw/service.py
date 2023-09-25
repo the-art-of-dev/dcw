@@ -1,6 +1,12 @@
+import enum
 from dcw.templates import template_env_vars, render_template
 import yaml
 import os
+from dcw.environment import DCWEnv
+
+
+class DCWServiceMagic(str, enum.Enum):
+    UNITS = 'dcw.units'
 
 
 class DCWService:
@@ -10,6 +16,7 @@ class DCWService:
                  name: str,
                  config: dict = None) -> None:
         self.name = name
+        self.units = []
         self.image = ''
         self.ports = []
         self.environment = {}
@@ -53,12 +60,23 @@ class DCWService:
             self.networks = self.config['networks']
             del self.config['networks']
 
+    def __set_units_from_label(self):
+        if DCWServiceMagic.UNITS in self.labels:
+            self.units = self.lables[DCWServiceMagic.UNITS]
+
     def __set_from_config(self):
         self.__set_image_from_config()
         self.__set_ports_from_config()
         self.__set_environment_from_config()
         self.__set_labels_from_config()
         self.__set_networks_from_config()
+        self.__set_units_from_label()
+
+    def __str__(self) -> str:
+        return yaml.safe_dump(self.as_dict())
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, DCWService) and self.name == __value.name and self.as_dict() == __value.as_dict()
 
     def as_dict(self):
         return {
@@ -82,15 +100,14 @@ class DCWService:
         return template_env_vars(yaml.safe_dump(self.as_dict()))
 
     def apply_global_env(self, env_vars: dict):
-        new_data = yaml.safe_load(render_template(yaml.safe_dump(self.as_dict()), env_vars))
+        new_data = yaml.safe_load(render_template(
+            yaml.safe_dump(self.as_dict()), env_vars))
         self.apply_config(new_data)
 
-    def __str__(self) -> str:
-        return yaml.safe_dump(self.as_dict())
+    def apply_environment(self, env: DCWEnv):
+        self.apply_config(env.service_configs[self.name])
+        self.apply_global_env(env.global_envs)
 
-    def __eq__(self, __value: object) -> bool:
-        return isinstance(__value, DCWService) and self.name == __value.name and self.as_dict() == __value.as_dict()
-    
 
 def import_service_from_file(file_path: str) -> DCWService:
     file_name = os.path.basename(file_path)

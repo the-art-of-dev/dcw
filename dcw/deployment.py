@@ -92,32 +92,6 @@ class DCWDeployment:
         )
 
 
-# def import_deployment_from_file(file_path: str) -> DCWDeployment:
-#     file_name = os.path.basename(file_path)
-#     file_name_parts = file_name.split('.')
-#     if file_name_parts.pop() != 'txt':
-#         return None
-#     if len(file_name_parts) <= 1:
-#         return None
-#     type = file_name_parts.pop(0)
-#     name = '.'.join(file_name_parts)
-#     depl_pairs = []
-#     with open(file_path, 'r') as f:
-#         for line in f:
-#             depl_pairs.append(tuple(line.strip().split(':')))
-#     return DCWDeployment(name, type, depl_pairs)
-
-
-# def import_deployments_from_dir(dir_path: str) -> dict[str, DCWDeployment]:
-#     depls = {}
-#     for file_name in os.listdir(dir_path):
-#         d = import_deployment_from_file(os.path.join(dir_path, file_name))
-#         if d is None:
-#             continue
-#         depls[d.name] = d
-
-#     return depls
-
 def make_dc_deployment(depl_config_path: str):
     depl_config_dir = os.path.dirname(depl_config_path)
     depl_config = {'services': {}, 'networks': {}}
@@ -176,32 +150,6 @@ def upgrade_k8s_deployment(depl_config_path: str):
             yaml.safe_dump(k8s_config, f)
 
 
-# def make_deployment(dir_path: str, deployment: DCWDeployment):
-#     depl_config_path = get_depl_config_path(dir_path, deployment)
-#     if deployment.type == 'dc':
-#         make_dc_deployment(depl_config_path)
-#     elif deployment.type == 'k8s':
-#         make_k8s_deployment(depl_config_path)
-#         upgrade_k8s_deployment(depl_config_path)
-#     else:
-#         raise Exception('Deployment type not supported')
-
-
-# def execute_deployment_command(depl_dir_path: str, deployment: DCWDeployment, command: [str]):
-#     commands = {
-#         'dc': 'docker-compose',
-#         'k8s': 'kubectl'
-#     }
-
-#     depl_config = get_depl_config_path(depl_dir_path, deployment)
-#     depl_config_dir = os.path.dirname(depl_config)
-
-#     subprocess.run([commands[deployment.type], *command],
-#                    stdout=sys.stdout,
-#                    stderr=sys.stderr,
-#                    cwd=depl_config_dir)
-
-
 class DCWTenantDeploymentConfig:
     def __init__(self) -> None:
         self.name = ''
@@ -247,7 +195,7 @@ class DCWTenant:
         with open(dc_depl_path, 'w') as f:
             yaml.safe_dump(dc_depl, f)
 
-    def __convert_dc_to_k8s_deployment():
+    def __convert_dc_to_k8s_deployment(self):
         pass
 
     def __make_k8s_deployment(self, depl_spec: DCWDeploymentSpec):
@@ -261,7 +209,7 @@ class DCWTenant:
                               cwd=depl_config_dir, capture_output=True, text=True)
         if proc.stderr:
             print(proc.stderr)
-            return
+          
 
     def make_deployment(self, depl_names: [str]):
         maker_map = {

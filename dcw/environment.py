@@ -1,7 +1,7 @@
 import enum
 import os
 from dotenv import dotenv_values
-
+from dcw.service import DCWService
 
 class DCWEnvVariableType(str, enum.Enum):
     GLOBAL = "global",
@@ -11,6 +11,11 @@ class DCWEnvVariableType(str, enum.Enum):
 class DCWEnv:
     def __init__(self, name: str, env_vars: dict = None) -> None:
         self.name = name
+        self.tenant = ''
+        self.services = []
+        self.units = []
+        self.tasks = []
+        self.deployment_types = []
         if env_vars is None:
             env_vars = {}
         self.global_envs = {}
@@ -53,9 +58,9 @@ class DCWEnv:
             if svc_name not in self.service_configs:
                 self.service_configs[svc_name] = {}
 
-            if svc_env_name == '__set':
+            if svc_env_name == '__val':
                 self.service_configs[svc_name][svc_key] = env_value
-            elif svc_env_name == '__setarr':
+            elif svc_env_name == '__arr':
                 self.service_configs[svc_name][svc_key] = env_value.split(',')
             else:
                 if svc_key not in self.service_configs[svc_name] or self.service_configs[svc_name][svc_key] is None:
@@ -79,6 +84,11 @@ class DCWEnv:
                 else:
                     result[f'svc.{svc_name}.{svc_key}.__set'] = self.service_configs[svc_name][svc_key]
         return result
+    
+    def make_specification(self, svc_group: dict[str, DCWService]):
+        pass
+    
+
 
 
 def import_env_from_file(file_path: str) -> DCWEnv:
