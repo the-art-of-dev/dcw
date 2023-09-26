@@ -1,7 +1,7 @@
 ```yaml
 services:
   web-server:
-    units: unit2, unit3
+    service_groups: [unit2, unit3]
     tasks:
       - wst1
       - wst2
@@ -25,7 +25,7 @@ environments:
     deployment_types: docker-compose
     services:
       - neki1
-    units:
+    service_gorups:
       - unit1
     tasks:
       - task1
@@ -38,7 +38,7 @@ environments:
     services:
       - neki1
       - neki2
-    units:
+    service_gorups:
       - unit1
     tasks:
       - task2

@@ -5,9 +5,9 @@ import os
 from dcw.environment import DCWEnv
 
 
-class DCWServiceMagic(str, enum.Enum):
-    UNITS = 'dcw.units'
-
+class DCWServiceMagicLabels(str, enum.Enum):
+    GROUPS = 'dcw.groups'
+    DEPLOYMENT_TYPE = 'dcw.deployment_type'
 
 class DCWService:
     """DCW Service represents a docker compose service defined in a docker-compose.yml file"""
@@ -16,7 +16,8 @@ class DCWService:
                  name: str,
                  config: dict = None) -> None:
         self.name = name
-        self.units = []
+        self.groups = []
+        self.deployment_type = 'docker-compose'
         self.image = ''
         self.ports = []
         self.environment = {}
@@ -60,9 +61,13 @@ class DCWService:
             self.networks = self.config['networks']
             del self.config['networks']
 
-    def __set_units_from_label(self):
-        if DCWServiceMagic.UNITS in self.labels:
-            self.units = self.lables[DCWServiceMagic.UNITS]
+    def __set_groups_from_label(self):
+        if DCWServiceMagicLabels.GROUPS in self.labels:
+            self.units = self.lables[DCWServiceMagicLabels.GROUPS]
+
+    def __set_deployment_type_from_label(self):
+        if DCWServiceMagicLabels.DEPLOYMENT_TYPE in self.labels:
+            self.deployment_type = self.labels[DCWServiceMagicLabels.DEPLOYMENT_TYPE]
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -70,7 +75,8 @@ class DCWService:
         self.__set_environment_from_config()
         self.__set_labels_from_config()
         self.__set_networks_from_config()
-        self.__set_units_from_label()
+        self.__set_groups_from_label()
+        self.__set_deployment_type_from_label()
 
     def __str__(self) -> str:
         return yaml.safe_dump(self.as_dict())

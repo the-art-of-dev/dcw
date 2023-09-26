@@ -1,7 +1,5 @@
 from dcw.service import DCWService
 from dcw.environment import DCWEnv
-from dcw.unit import DCWUnit
-from dcw.task import DCWTask
 import os
 import yaml
 from dcw.utils import flatten
