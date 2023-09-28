@@ -1,14 +1,5 @@
 # DCW CLI Commands
 
-```bash
-dcw
-```
-
-| Option name | Option description | Default |
-| :---------: | ------------------ | :-----: |
-| `--tenant`  | Specify tenant     |  local  |
-|             |                    |         |
-
 ## svc | service
 
 ```bash
@@ -29,35 +20,15 @@ dcw env [OPTIONS] (COMMAND)
 | :-----------: | -------------------- |
 |   `COMMAND`   | `list`, `show`       |
 
-## unit
+## svc-group | service group
 
 ```bash
-dcw unit [OPTIONS] (COMMAND)
+dcw svc-group [OPTIONS] (COMMAND)
 ```
 
-| Argument name | Argument description    |
-| :-----------: | ----------------------- |
-|   `COMMAND`   | `list`, `show`, `apply` |
-
-## task
-
-```bash
-dcw task [OPTIONS] (COMMAND)
-```
-
-| Argument name | Argument description   |
-| :-----------: | ---------------------- |
-|   `COMMAND`   | `list`, `show`, `args` |
-
-## tnt | tenant
-
-```bash
-dcw tnt [OPTIONS] (COMMAND)
-```
-
-| Argument name | Argument description                     |
-| :-----------: | ---------------------------------------- |
-|   `COMMAND`   | `list`, `show`, `check`, `envs`, `depls` |
+| Argument name | Argument description |
+| :-----------: | -------------------- |
+|   `COMMAND`   | `list`, `show`       |
 
 ## depl | deployment
 
@@ -65,13 +36,13 @@ dcw tnt [OPTIONS] (COMMAND)
 dcw depl [OPTIONS] (COMMAND)
 ```
 
-| Argument name | Argument description                               |
-| :-----------: | -------------------------------------------------- |
-|   `COMMAND`   | `list`, `show`, `check`, `bundle`, `tasks`, `spec` |
+| Argument name | Argument description                      |
+| :-----------: | ----------------------------------------- |
+|   `COMMAND`   | `list`, `show`, `check`, `bundle`, `spec` |
 
 | Option name | Option description | Default |
 | :---------: | ------------------ | :-----: |
-|  `--unit`   | Specify units      |         |
+|   `--env`   | Specify units      |         |
 |   `--svc`   | Specify services   |         |
 |             |                    |         |
 
@@ -96,29 +67,6 @@ dcw xs [OPTIONS] (deployment) (service) (command)
 | :-----------: | ------------------------------------------------------------------------------ |
 | `deployment`  | Specify tenant deployment(unit name)                                           |
 |   `command`   | Command to run on deployment specific cli tool (e.g.: docker-compose, kubectl) |
-
-## r | run
-
-```bash
-dcw r [OPTIONS] (deployment) (task)
-```
-
-| Argument name | Argument description                 |
-| :-----------: | ------------------------------------ |
-| `deployment`  | Specify tenant deployment(unit name) |
-|    `task`     | Specify deployment task to run       |
-
-## rs | run-service
-
-```bash
-dcw rs [OPTIONS] (deployment) (service) (task)
-```
-
-| Argument name | Argument description                 |
-| :-----------: | ------------------------------------ |
-| `deployment`  | Specify tenant deployment(unit name) |
-|   `service`   | Specify deployment service           |
-|    `task`     | Specify deployment task to run       |
 
 ## valut
 

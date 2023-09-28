@@ -1,94 +1,173 @@
+import copy
 import enum
 import os
+import re
 from dotenv import dotenv_values
+from dcw.utils import dot_env_to_dict_rec, flatten_dict, deep_update
+from pprint import pprint as pp
 from dcw.service import DCWService
 
-class DCWEnvVariableType(str, enum.Enum):
-    GLOBAL = "global",
-    SERVICE = "service"
+
+class DCWEnvMagicSettingType(str, enum.Enum):
+    SERVICE_GROUPS = 'dcw.service_groups'
+    SERVICES = 'dcw.services'
+    DEPLOYMENT_TYPE = 'dcw.deployment_type'
+    SERVICE_SELECTOR = 'dcw.svc.'
+    SERVICE_GROUP_SELECTOR = 'dcw.svc_group.'
+
+
+class DCWEnvMagicSettingsPropertySelectorType(str, enum.Enum):
+    OBJECT = 'object'
+    FLAT = 'flat'
+
+
+class DCWEnvMagicSettingsSelectorWildcard(str, enum.Enum):
+    ANY = '*'
 
 
 class DCWEnv:
     def __init__(self, name: str, env_vars: dict = None) -> None:
-        self.name = name
-        self.tenant = ''
-        self.services = []
-        self.units = []
-        self.tasks = []
-        self.deployment_types = []
         if env_vars is None:
             env_vars = {}
+
+        self.name = name
+        self.services = []
+        self.svc_groups = []
+        self.deployment_type = None
         self.global_envs = {}
-        self.service_configs = {}
+        self.service_configs: dict[str, dict] = {}
+        self.svc_group_configs: dict[str, dict] = {}
 
         for k, v in env_vars.items():
             self.set_env(k, v)
 
-    def __type_of_env(self, env_name: str):
-        if env_name.startswith('svc.'):
-            return DCWEnvVariableType.SERVICE
-        else:
-            return DCWEnvVariableType.GLOBAL
+    def __type_from_magic_env_name(self, env_name: str) -> DCWEnvMagicSettingType:
+        for st in DCWEnvMagicSettingType:
+            if env_name.startswith(st.value):
+                return st
+        return None
 
-    def __svc_name_from_env(self, env_name: str):
-        if self.__type_of_env(env_name) == DCWEnvVariableType.SERVICE:
-            return env_name.split('.')[1]
+    def __selector_from_magic_env_name(self, env_name: str) -> str:
+        env_type = self.__type_from_magic_env_name(env_name)
+        if env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
+            return env_name[len(env_type.value):].split('.')[0]
+        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR:
+            return env_name[len(env_type.value):].split('.')[0]
         else:
             return None
 
-    def __svc_key_from_env(self, env_name: str):
-        if self.__type_of_env(env_name) == DCWEnvVariableType.SERVICE:
-            return env_name.split('.')[2]
-        else:
-            return None
+    def __prop_selector_from_magic_env_name(self, env_name: str):
+        env_type = self.__type_from_magic_env_name(env_name)
+        prop_selector = None
+        if env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
+            selector = self.__selector_from_magic_env_name(env_name)
+            prop_selector = env_name[len(f'{env_type.value}{selector}.'):]
+        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR:
+            selector = self.__selector_from_magic_env_name(env_name)
+            prop_selector = env_name[len(f'{env_type.value}{selector}.'):]
 
-    def __get_env_name(self, env_name: str):
-        if self.__type_of_env(env_name) == DCWEnvVariableType.SERVICE:
-            return '.'.join(env_name.split('.')[3:])
+        if prop_selector.endswith('[]'):
+            prop_selector = prop_selector[:-2]
+
+        return prop_selector
+
+    def __prop_selector_type_from_magic_env_name(self, env_name: str):
+        prop_selector = self.__prop_selector_from_magic_env_name(env_name)
+
+        if prop_selector.endswith(']') and prop_selector.count('.[') == 1:
+            return DCWEnvMagicSettingsPropertySelectorType.FLAT
         else:
-            return env_name
+            return DCWEnvMagicSettingsPropertySelectorType.OBJECT
+
+    def __selector_value_dict(self, env_name: str, env_value: str):
+        prop_selector = self.__prop_selector_from_magic_env_name(env_name)
+        prop_selector_type = self.__prop_selector_type_from_magic_env_name(
+            env_name)
+        prop_value = env_value.split(
+            ',') if env_name.endswith('[]') else env_value
+
+        if prop_selector_type == DCWEnvMagicSettingsPropertySelectorType.OBJECT:
+            return dot_env_to_dict_rec(prop_selector, prop_value)
+        elif prop_selector_type == DCWEnvMagicSettingsPropertySelectorType.FLAT:
+            flat_key = prop_selector.split('.[')[1][:-1]
+            ps_key = prop_selector.split('.[')[0]
+            return dot_env_to_dict_rec(ps_key, prop_value, flat_key)
+
+    def __match_selector(self, target: str, selector: str) -> bool:
+        selector = selector.replace(
+            DCWEnvMagicSettingsSelectorWildcard.ANY, '\S+')
+        regex = re.compile(rf'^{selector}$')
+        return regex.match(target)
 
     def set_env(self, env_name: str, env_value: str):
         """Set an environment variable for this environment"""
-        if self.__type_of_env(env_name) == DCWEnvVariableType.SERVICE:
-            svc_name = self.__svc_name_from_env(env_name)
-            svc_key = self.__svc_key_from_env(env_name)
-            svc_env_name = self.__get_env_name(env_name)
-
-            if svc_name not in self.service_configs:
-                self.service_configs[svc_name] = {}
-
-            if svc_env_name == '__val':
-                self.service_configs[svc_name][svc_key] = env_value
-            elif svc_env_name == '__arr':
-                self.service_configs[svc_name][svc_key] = env_value.split(',')
-            else:
-                if svc_key not in self.service_configs[svc_name] or self.service_configs[svc_name][svc_key] is None:
-                    self.service_configs[svc_name][svc_key] = {}
-                self.service_configs[svc_name][svc_key][svc_env_name] = env_value
-        else:
+        env_type = self.__type_from_magic_env_name(env_name)
+        if env_type is None:
             self.global_envs[env_name] = env_value
+        elif env_type == DCWEnvMagicSettingType.SERVICES:
+            self.services = [s.strip() for s in env_value.split(',')]
+        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUPS:
+            self.svc_groups = [s.strip() for s in env_value.split(',')]
+        elif env_type == DCWEnvMagicSettingType.DEPLOYMENT_TYPE:
+            self.deployment_type = env_value
+        elif env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
+            selector = self.__selector_from_magic_env_name(env_name)
+            if selector not in self.service_configs:
+                self.service_configs[selector] = {}
+            selector_value = self.__selector_value_dict(env_name, env_value)
+            self.service_configs[selector] = deep_update(
+                self.service_configs[selector], selector_value)
+        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR:
+            selector = self.__selector_from_magic_env_name(env_name)
+            if selector not in self.svc_group_configs:
+                self.svc_group_configs[selector] = {}
+            selector_value = self.__selector_value_dict(env_name, env_value)
+            self.svc_group_configs[selector] = deep_update(
+                self.svc_group_configs[selector], selector_value)
+
+    def apply_on_service(self, service: DCWService) -> DCWService:
+        svc_copy = copy.deepcopy(service)
+        for svc_selector in self.service_configs:
+            if self.__match_selector(svc_copy.name, svc_selector):
+                svc_copy.apply_config(self.service_configs[svc_selector])
+        svc_copy.apply_global_env(self.global_envs)
+        return svc_copy
 
     def as_dict(self):
         result = {
             **self.global_envs
         }
-        for svc_name in self.service_configs:
-            for svc_key in self.service_configs[svc_name]:
-                if isinstance(self.service_configs[svc_name][svc_key], dict):
-                    for svc_env_name in self.service_configs[svc_name][svc_key]:
-                        result[f'svc.{svc_name}.{svc_key}.{svc_env_name}'] = self.service_configs[svc_name][svc_key][svc_env_name]
-                elif isinstance(self.service_configs[svc_name][svc_key], list):
-                    result[f'svc.{svc_name}.{svc_key}.__setarr'] = ','.join(
-                        self.service_configs[svc_name][svc_key])
-                else:
-                    result[f'svc.{svc_name}.{svc_key}.__set'] = self.service_configs[svc_name][svc_key]
-        return result
-    
-    def make_specification(self, svc_group: dict[str, DCWService]):
-        pass
-    
 
+        if self.services:
+            result[f'{DCWEnvMagicSettingType.SERVICES}'] = ','.join(
+                self.services)
+        if self.svc_groups:
+            result[f'{DCWEnvMagicSettingType.SERVICE_GROUPS}'] = ','.join(
+                self.svc_groups)
+        if self.deployment_type:
+            result[f'{DCWEnvMagicSettingType.DEPLOYMENT_TYPE}'] = self.deployment_type
+
+        for svc_name in self.service_configs:
+            flattened = flatten_dict(self.service_configs[svc_name])
+            for prop in flattened:
+                prop_value = flattened[prop]
+                result_key = f'{DCWEnvMagicSettingType.SERVICE_SELECTOR}{svc_name}.{prop}'
+                if isinstance(prop_value, list):
+                    prop_value = '.'.join(prop_value)
+                    result_key += '[]'
+                result[result_key] = prop_value
+
+        for svc_group_name in self.svc_group_configs:
+            flattened = flatten_dict(self.svc_group_configs[svc_group_name])
+            for prop in flattened:
+                prop_value = flattened[prop]
+                result_key = f'{DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR}{svc_group_name}.{prop}'
+                if isinstance(prop_value, list):
+                    prop_value = '.'.join(prop_value)
+                    result_key += '[]'
+                result[result_key] = prop_value
+
+        return result
 
 
 def import_env_from_file(file_path: str) -> DCWEnv:

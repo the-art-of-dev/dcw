@@ -1,0 +1,41 @@
+version: "2.4"
+
+networks:
+    check-net:
+
+services:
+    web-app-client: #web*client, web-app*
+        image: web-app-client:latest
+        environment:
+            RUNTIME_ENV: ${RUNTIME_ENV}
+        ports:
+            - 8080:8080
+        networks:
+            - check-net
+        labels:
+            - dcw.svc_groups=web-apps,full
+            - dcw.kompose.service.loadbalancerip=10.10.10.11
+
+    web-app-server: #web-app*
+        image: web-app-server
+        environment:
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+        ports:
+            - 8081:80
+        networks:
+            - check-net
+        labels:
+            - dcw.svc_groups=web-apps,full
+
+    web-client: #web*client
+        image: web-client:latest
+        environment:
+            RUNTIME_ENV: ${RUNTIME_ENV}
+        ports:
+            - 8082:8082
+        networks:
+            - check-net
+        labels:
+            - dcw.svc_groups=web-clients,full

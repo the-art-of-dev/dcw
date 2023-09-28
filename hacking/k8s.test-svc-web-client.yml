@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    dcw.svc_groups: web-clients,full
+    kompose.cmd: kompose convert -f ./hacking/k8s.test-svc-web-client.yml.tmp.yml
+      --stdout
+    kompose.version: 1.30.0 (9d8dcb518)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: web-client
+  name: web-client
+  namespace: default
+spec:
+  ports:
+  - name: '8082'
+    port: 8082
+    targetPort: 8082
+  selector:
+    io.kompose.service: web-client
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    dcw.svc_groups: web-clients,full
+    kompose.cmd: kompose convert -f ./hacking/k8s.test-svc-web-client.yml.tmp.yml
+      --stdout
+    kompose.version: 1.30.0 (9d8dcb518)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: web-client
+  name: web-client
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: web-client
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        dcw.svc_groups: web-clients,full
+        kompose.cmd: kompose convert -f ./hacking/k8s.test-svc-web-client.yml.tmp.yml
+          --stdout
+        kompose.version: 1.30.0 (9d8dcb518)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/hacking-check-net: 'true'
+        io.kompose.service: web-client
+    spec:
+      containers:
+      - env:
+        - name: RUNTIME_ENV
+          value: dev
+        image: web-client:latest
+        name: web-client
+        ports:
+        - containerPort: 8082
+          hostPort: 8082
+          protocol: TCP
+        resources: {}
+      restartPolicy: Always
+status: {}

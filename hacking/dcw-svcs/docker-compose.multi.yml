@@ -1,0 +1,22 @@
+---
+services:
+    web-app:
+        image: nginx:latest
+        ports:
+            - 8080:80
+        networks:
+            - web-network
+
+networks:
+    web-network:
+---
+services:
+    web-app2:
+        image: nginx:latest
+        ports:
+            - 8081:80
+        networks:
+            - web-network
+
+networks:
+    web-network:

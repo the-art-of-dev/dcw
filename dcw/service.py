@@ -2,22 +2,21 @@ import enum
 from dcw.templates import template_env_vars, render_template
 import yaml
 import os
-from dcw.environment import DCWEnv
+from dcw.utils import deep_update
 
 
 class DCWServiceMagicLabels(str, enum.Enum):
-    GROUPS = 'dcw.groups'
-    DEPLOYMENT_TYPE = 'dcw.deployment_type'
+    GROUPS = 'dcw.svc_groups'
+
 
 class DCWService:
-    """DCW Service represents a docker compose service defined in a docker-compose.yml file"""
+    """DCW Service represents a docker service defined in a docker-compose.yml file"""
 
     def __init__(self,
                  name: str,
                  config: dict = None) -> None:
         self.name = name
         self.groups = []
-        self.deployment_type = 'docker-compose'
         self.image = ''
         self.ports = []
         self.environment = {}
@@ -29,12 +28,10 @@ class DCWService:
     def __set_image_from_config(self):
         if 'image' in self.config:
             self.image = self.config['image']
-            del self.config['image']
 
     def __set_ports_from_config(self):
         if 'ports' in self.config:
             self.ports = self.config['ports']
-            del self.config['ports']
 
     def __set_environment_from_config(self):
         if 'environment' in self.config:
@@ -44,30 +41,26 @@ class DCWService:
                     self.config[env] = val
             else:
                 self.environment = self.config['environment']
-            del self.config['environment']
 
     def __set_labels_from_config(self):
-        if 'labels' in self.config:
-            if self.config['labels'] is list:
-                for lv in self.config['labels']:
-                    (lbl, val) = lv.split('=')
-                    self.config[lbl] = val
-            else:
-                self.labels = self.config['labels']
-            del self.config['labels']
+        if 'labels' not in self.config:
+            self.config['labels'] = {}
+        if isinstance(self.config['labels'], list):
+            for lv in self.config['labels']:
+                (lbl, val) = lv.split('=')
+                self.labels[lbl] = val
+
+            self.config['labels'] = self.labels
+        else:
+            self.labels = self.config['labels']
 
     def __set_networks_from_config(self):
         if 'networks' in self.config:
             self.networks = self.config['networks']
-            del self.config['networks']
 
     def __set_groups_from_label(self):
         if DCWServiceMagicLabels.GROUPS in self.labels:
-            self.units = self.lables[DCWServiceMagicLabels.GROUPS]
-
-    def __set_deployment_type_from_label(self):
-        if DCWServiceMagicLabels.DEPLOYMENT_TYPE in self.labels:
-            self.deployment_type = self.labels[DCWServiceMagicLabels.DEPLOYMENT_TYPE]
+            self.groups = self.labels[DCWServiceMagicLabels.GROUPS]
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -76,7 +69,6 @@ class DCWService:
         self.__set_labels_from_config()
         self.__set_networks_from_config()
         self.__set_groups_from_label()
-        self.__set_deployment_type_from_label()
 
     def __str__(self) -> str:
         return yaml.safe_dump(self.as_dict())
@@ -86,51 +78,48 @@ class DCWService:
 
     def as_dict(self):
         return {
-            'image': self.image,
-            'ports': self.ports,
-            'environment': self.environment,
-            'labels': self.labels,
-            'networks': self.networks,
             **self.config,
         }
 
     def apply_config(self, config: dict):
         """Apply a config to this service"""
-        self.config = {
-            **self.config,
-            **config
-        }
+        self.config = deep_update(self.config, config)
         self.__set_from_config()
 
     def get_global_envs(self):
         return template_env_vars(yaml.safe_dump(self.as_dict()))
 
     def apply_global_env(self, env_vars: dict):
+        for ev in self.get_global_envs():
+            if ev not in env_vars:
+                raise Exception(
+                    f'GLOBAL ENVIRONMENT VARIABLE "{ev}" NOT SATISFIED')
         new_data = yaml.safe_load(render_template(
             yaml.safe_dump(self.as_dict()), env_vars))
         self.apply_config(new_data)
 
-    def apply_environment(self, env: DCWEnv):
-        self.apply_config(env.service_configs[self.name])
-        self.apply_global_env(env.global_envs)
 
-
-def import_service_from_file(file_path: str) -> DCWService:
+def import_services_from_file(file_path: str) -> dict[str, DCWService]:
     file_name = os.path.basename(file_path)
     if not file_name.startswith('docker-compose.') or not file_name.endswith('.yml'):
         return None
 
-    name = file_name[len('docker-compose.'):].split('.')[0]
+    services = {}
 
     with open(file_path) as f:
-        x = next(iter(yaml.safe_load(f)['services'].values()))
-        return DCWService(name, config=x)
+        file_svcs = yaml.safe_load(f)['services']
+        for svc_name in file_svcs:
+            services[svc_name] = DCWService(
+                svc_name, config=file_svcs[svc_name])
+
+    return services
 
 
 def import_services_from_dir(dir_path: str) -> dict[str, DCWService]:
-    svcs = {}
+    services = {}
     for file_name in os.listdir(dir_path):
-        svc = import_service_from_file(os.path.join(dir_path, file_name))
-        if svc is not None:
-            svcs[svc.name] = svc
-    return svcs
+        file_svcs = import_services_from_file(
+            os.path.join(dir_path, file_name))
+        for svc in file_svcs:
+            services[svc.name] = svc
+    return services
