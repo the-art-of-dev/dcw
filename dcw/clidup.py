@@ -1,64 +1,48 @@
+import typer
 import os
-import click
 from pprint import pprint as pp
-import enum
-from typing import List
-import prettytable
 import yaml
+import enum
 
 from dcw.config import import_config_from_file, DCWMagicConfigs
 from dcw.context import DCWContext
-from dcw.deployment import export_deployment_configuration, make_deployment, execute_deployment_command
+from dcw.deployment import export_deployment_configuration, upgrade_k8s_deployment, make_k8s_deployment
+import prettytable
 from dcw.vault import encrypt_file, decrypt_file, read_valut_config_from_file
-from dcw.environment import load_env, dump_env, export_env_to_dir
 
 dcw_config = import_config_from_file('.dcwrc.yaml')
-dcw_context: DCWContext = None
-
+dcw_context = None
 
 class DCWUnitBundleOutputType(str, enum.Enum):
     DOCKER_COMPOSE = "dc"
     KUBERNETES = "k8s"
 
 
-@click.group()
-@click.option('--config', default='.dcwrc.yaml')
-def app(config: str):
-    global dcw_context
-    dcw_config = import_config_from_file(config)
+app = typer.Typer(
+    help="Docker Compose Wrapper",
+)
+
+
+@app.callback()
+def main(config: str = None):
+    global dcw_config, dcw_context
+
+    if config is not None:
+        dcw_config = import_config_from_file(config)
+
     dcw_context = DCWContext(dcw_config)
 
 
-@click.group('svc')
-def svc_app():
-    pass
-
-
-@click.group('env')
-def env_app():
-    pass
-
-
-@click.group('unit')
-def unit_app():
-    pass
-
-
-@click.group('depl')
-def depl_app():
-    pass
-
-
-@click.group('vault')
-def vault_app():
-    pass
-
-
-app.add_command(svc_app)
-app.add_command(env_app)
-app.add_command(unit_app)
-app.add_command(depl_app)
-app.add_command(vault_app)
+svc_app = typer.Typer()
+env_app = typer.Typer()
+unit_app = typer.Typer()
+depl_app = typer.Typer()
+vault_app = typer.Typer()
+app.add_typer(svc_app, name="svc")
+app.add_typer(env_app, name="env")
+app.add_typer(unit_app, name="unit")
+app.add_typer(depl_app, name="depl")
+app.add_typer(vault_app, name="vault")
 
 
 def table_print_columns(data_columns: [(str, [str])]):
@@ -131,51 +115,36 @@ def depl_bundle(name: str):
     data = {d: depl_config[d].as_dict() for d in depl_config}
     depl_config_path = export_deployment_configuration(
         dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, data)
-    make_deployment(depl_config_path)
-
+    make_k8s_deployment(depl_config_path)
+    upgrade_k8s_deployment(depl_config_path)
 
 @vault_app.command("encrypt")
-@click.argument('key')
 def vault_encrypt(key: str):
     vault_dir = dcw_config[DCWMagicConfigs.DCW_VAULT_PATH]
     env_dir = f'{vault_dir}/vault-envs'
-
     if not os.path.exists(env_dir):
         if not os.path.exists(vault_dir):
             os.makedirs(vault_dir)
         os.makedirs(env_dir)
-
     vault_data = read_valut_config_from_file()
-
     for e in vault_data.environments:
-        encrypt_file(dump_env(dcw_context.environments[e]), f"{env_dir}/.{e}.env.crypt", key)
-
+        env = yaml.safe_dump(dcw_context.environments[e].as_dict())
+        encrypt_file(env, f"{env_dir}/.{e}.env.crypt", key)
 
 @vault_app.command("decrypt")
-@click.argument('key')
-def vault_decrypt(key: str):
+def vault_encrypt(key: str):
     envs_dir = dcw_config[DCWMagicConfigs.DCW_ENVS_PATH]
     vault_dir = dcw_config[DCWMagicConfigs.DCW_VAULT_PATH]
     vault_data = read_valut_config_from_file()
-
     for e in vault_data.environments:
-        env_file_path = os.path.join(vault_dir, 'vault-envs', f".{e}.env.crypt")
-        str_data = decrypt_file(env_file_path, key)
-        export_env_to_dir(envs_dir, load_env(e, str_data))
+        with open(envs_dir + f'/{e}.test.env', "w") as file:
+            pp(decrypt_file(f"{vault_dir}/vault-envs/.{e}.env.crypt", key))
+            yaml.safe_dump(decrypt_file(f"{vault_dir}/vault-envs/.{e}.env.crypt", key), file)
 
-@app.command('x', context_settings={"ignore_unknown_options": True})
-@click.argument('name')
-@click.argument('args', nargs=-1)
-def execute_depl(name: str, args: [str]):
-    depl = dcw_context.deployments[name]
-    execute_deployment_command(
-        dcw_context.config[DCWMagicConfigs.DCW_DEPL_CONFIGS_PATH], depl, args)
-
-# @app.command('task', context_settings={"ignore_unknown_options": True})
-# @click.argument('args', nargs=-1)
-# def execute_task(args: [str]):
-#     execute_ansible_task('./hacking/dcw-tasks/copy_file.yaml', list(args))
-
+@vault_app.command("test")
+def vault_encrypt():
+    pp(read_valut_config_from_file())
+    
 
 if __name__ == "__main__":
     app()

@@ -4,4 +4,4 @@ config:
 vault:
   environments:
     - example-secure
-  
+    - example-local

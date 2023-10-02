@@ -1,5 +1,6 @@
 import enum
 import os
+import io
 from dotenv import dotenv_values
 
 
@@ -98,3 +99,21 @@ def import_envs_from_dir(dir_path: str) -> dict[str, DCWEnv]:
             continue
         envs[env.name] = env
     return envs
+
+
+def export_env_to_dir(dir_path: str, env: DCWEnv):
+    env_file_path = os.path.join(dir_path, f".{env.name}.env")
+    with open(env_file_path, "w") as f:
+        f.write(dump_env(env))
+
+
+def load_env(name: str, str_data: str) -> DCWEnv:
+    return DCWEnv(name, dotenv_values(stream=io.StringIO(str_data)))
+
+
+def dump_env(env: DCWEnv) -> str:
+    env_data = env.as_dict()
+    str_env_data = ""
+    for k in env_data:
+        str_env_data += f"{k}={env_data[k]}\n"
+    return str_env_data
