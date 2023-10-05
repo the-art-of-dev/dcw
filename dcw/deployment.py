@@ -16,18 +16,15 @@ class DCWDeploymentSpecificationType(str, enum.Enum):
 class DCWDeploymentSpecification:
     def __init__(self,
                  name: str,
-                 deployment_type: str,
                  services: dict[str, dict],
                  env: dict) -> None:
         self.name = name
-        self.deployment_type = deployment_type
         self.services = services
         self.environment = env
 
     def as_dict(self):
         return {
             'name': self.name,
-            'deployment_type': self.deployment_type,
             'services': self.services,
             'environment': self.environment
         }
@@ -36,7 +33,6 @@ class DCWDeploymentSpecification:
     def from_dict(cfg_dict: dict):
         return DCWDeploymentSpecification(
             cfg_dict['name'],
-            cfg_dict['deployment_type'],
             cfg_dict['services'],
             cfg_dict['environment'],
         )
@@ -45,7 +41,6 @@ class DCWDeploymentSpecification:
 def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> [DCWDeploymentSpecification]:
     environment: DCWEnv = dcw_ctx.environments[env_name]
     depl_specs = []
-    depl_type = environment.deployment_type if environment.deployment_type else 'docker-compose'
     default_spec_svcs = {}
 
     for svc_name in environment.services:
@@ -63,7 +58,7 @@ def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> 
                 s).as_dict()
 
     depl_specs.append(DCWDeploymentSpecification(
-        'default', depl_type, default_spec_svcs, environment.as_dict()))
+        'default', default_spec_svcs, environment.as_dict()))
 
     return depl_specs
 
@@ -71,7 +66,6 @@ def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> 
 def __make_per_svc_group_deployment_specification(env_name: str, dcw_ctx: DCWContext) -> [DCWDeploymentSpecification]:
     environment: DCWEnv = dcw_ctx.environments[env_name]
     depl_specs = []
-    depl_type = environment.deployment_type if environment.deployment_type else 'docker-compose'
 
     if environment.services:
         default_spec_svcs = {}
@@ -83,7 +77,7 @@ def __make_per_svc_group_deployment_specification(env_name: str, dcw_ctx: DCWCon
                 svc).as_dict()
 
         depl_specs.append(DCWDeploymentSpecification(
-            'default', depl_type, default_spec_svcs, environment.as_dict()))
+            'default', default_spec_svcs, environment.as_dict()))
 
     for group_name in environment.svc_groups:
         svcs = filter(lambda s: group_name in s.groups, [
@@ -92,7 +86,7 @@ def __make_per_svc_group_deployment_specification(env_name: str, dcw_ctx: DCWCon
         for s in svcs:
             group_depl_svcs[s.name] = environment.apply_on_service(s).as_dict()
         depl_specs.append(DCWDeploymentSpecification(
-            group_name, depl_type, group_depl_svcs, environment.as_dict()))
+            group_name, group_depl_svcs, environment.as_dict()))
 
     return depl_specs
 
@@ -100,7 +94,6 @@ def __make_per_svc_group_deployment_specification(env_name: str, dcw_ctx: DCWCon
 def __make_per_svc_deployment_specification(env_name: str, dcw_ctx: DCWContext) -> [DCWDeploymentSpecification]:
     environment: DCWEnv = dcw_ctx.environments[env_name]
     depl_specs = []
-    depl_type = environment.deployment_type if environment.deployment_type else 'docker-compose'
 
     if environment.services:
         for svc_name in environment.services:
@@ -108,14 +101,14 @@ def __make_per_svc_deployment_specification(env_name: str, dcw_ctx: DCWContext) 
                 raise Exception(f'SERVICE {svc_name} DOES NOT EXIST!')
             svc = dcw_ctx.services[svc_name]
             depl_specs.append(DCWDeploymentSpecification(
-                svc_name, depl_type, {svc_name: environment.apply_on_service(svc).as_dict()}, environment.as_dict()))
+                svc_name, {svc_name: environment.apply_on_service(svc).as_dict()}, environment.as_dict()))
 
     for group_name in environment.svc_groups:
         svcs = filter(lambda s: group_name in s.groups, [
                       dcw_ctx.services[s] for s in dcw_ctx.services])
         for s in svcs:
             depl_specs.append(DCWDeploymentSpecification(
-                s.name, depl_type, {s.name: environment.apply_on_service(s).as_dict()}, environment.as_dict()))
+                s.name, {s.name: environment.apply_on_service(s).as_dict()}, environment.as_dict()))
 
     return depl_specs
 
@@ -132,7 +125,7 @@ def make_deployment_specifications(env_name: str, spec_type: DCWDeploymentSpecif
 
 def export_deployment_spec(spec_path: str, depl_sepc: DCWDeploymentSpecification):
     export_dir = os.path.dirname(spec_path)
-    if not os.path.exists(export_dir):
+    if export_dir != '' and not os.path.exists(export_dir):
         os.makedirs(export_dir)
     with open(spec_path, 'w') as f:
         yaml.safe_dump(depl_sepc.as_dict(), f)

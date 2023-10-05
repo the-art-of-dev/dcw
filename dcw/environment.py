@@ -33,12 +33,12 @@ class DCWEnv:
         self.name = name
         self.services = []
         self.svc_groups = []
-        self.deployment_type = None
         self.global_envs = {}
         self.service_configs: dict[str, dict] = {}
         self.svc_group_configs: dict[str, dict] = {}
+        self.__env_vars = env_vars
 
-        for k, v in env_vars.items():
+        for k, v in self.__env_vars.items():
             self.set_env(k, v)
 
     def __type_from_magic_env_name(self, env_name: str) -> DCWEnvMagicSettingType:
@@ -101,6 +101,7 @@ class DCWEnv:
 
     def set_env(self, env_name: str, env_value: str):
         """Set an environment variable for this environment"""
+        self.__env_vars[env_name] = env_value
         env_type = self.__type_from_magic_env_name(env_name)
         if env_type is None:
             self.global_envs[env_name] = env_value
@@ -108,8 +109,6 @@ class DCWEnv:
             self.services = [s.strip() for s in env_value.split(',')]
         elif env_type == DCWEnvMagicSettingType.SERVICE_GROUPS:
             self.svc_groups = [s.strip() for s in env_value.split(',')]
-        elif env_type == DCWEnvMagicSettingType.DEPLOYMENT_TYPE:
-            self.deployment_type = env_value
         elif env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
             selector = self.__selector_from_magic_env_name(env_name)
             if selector not in self.service_configs:
@@ -124,6 +123,9 @@ class DCWEnv:
             selector_value = self.__selector_value_dict(env_name, env_value)
             self.svc_group_configs[selector] = deep_update(
                 self.svc_group_configs[selector], selector_value)
+
+    def get_env(self, env_name: str):
+        return self.__env_vars[env_name]
 
     def apply_on_service(self, service: DCWService) -> DCWService:
         svc_copy = copy.deepcopy(service)
@@ -144,8 +146,6 @@ class DCWEnv:
         if self.svc_groups:
             result[f'{DCWEnvMagicSettingType.SERVICE_GROUPS}'] = ','.join(
                 self.svc_groups)
-        if self.deployment_type:
-            result[f'{DCWEnvMagicSettingType.DEPLOYMENT_TYPE}'] = self.deployment_type
 
         for svc_name in self.service_configs:
             flattened = flatten_dict(self.service_configs[svc_name])

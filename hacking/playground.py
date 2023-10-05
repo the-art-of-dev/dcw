@@ -25,11 +25,17 @@ DockerComposeDeploymentMaker()
 K8SDeploymentMaker()
 
 ctx = DCWContext(None, svcs, {env.name: env})
-depl_specs = make_deployment_specifications(env.name, 'SVC', ctx)
+ctx2 = DCWContext()
 
-for dc in depl_specs:
-    print(dc.name + ' ' + dc.deployment_type)
-    for s in dc.services:
-        pp(dc.services[s])
-    DCWDeploymentMaker.make_deployment(
-        'k8s', dc, f'./hacking/k8s.test-svc-{dc.name}.yml')
+pp(ctx.environments[env.name])
+ctx2.environments[env.name].set_env('playground-set', 'LLLL')
+pp(ctx.environments[env.name].get_env('playground-set'))
+
+# depl_specs = make_deployment_specifications(env.name, 'SVC', ctx)
+
+# for dc in depl_specs:
+#     print(dc.name + ' ' + dc.deployment_type)
+#     for s in dc.services:
+#         pp(dc.services[s])
+#     DCWDeploymentMaker.make_deployment(
+#         'k8s', dc, f'./hacking/k8s.test-svc-{dc.name}.yml')

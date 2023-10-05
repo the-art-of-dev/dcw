@@ -1,8 +1,9 @@
 import enum
-from dcw.templates import template_env_vars, render_template
+from dcw.utils import template_env_vars, render_template
 import yaml
 import os
 from dcw.utils import deep_update
+from dataclasses import dataclass
 
 
 class DCWServiceMagicLabels(str, enum.Enum):
@@ -16,7 +17,7 @@ class DCWService:
                  name: str,
                  config: dict = None) -> None:
         self.name = name
-        self.groups = []
+        self.groups: [str] = []
         self.image = ''
         self.ports = []
         self.environment = {}
@@ -60,7 +61,7 @@ class DCWService:
 
     def __set_groups_from_label(self):
         if DCWServiceMagicLabels.GROUPS in self.labels:
-            self.groups = self.labels[DCWServiceMagicLabels.GROUPS]
+            self.groups = self.labels[DCWServiceMagicLabels.GROUPS].split(',')
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -99,6 +100,23 @@ class DCWService:
         self.apply_config(new_data)
 
 
+@dataclass
+class ServiceGroup:
+    name: str
+    services: [str]
+
+
+def map_service_groups(svcs: dict[str, DCWService]) -> dict[str, ServiceGroup]:
+    svc_groups_map: dict[str, ServiceGroup] = {}
+    for sn in svcs:
+        for sg in svcs[sn].groups:
+            if sg not in svc_groups_map:
+                svc_groups_map[sg] = ServiceGroup(sg, [])
+            svc_groups_map[sg].services.append(sn)
+
+    return svc_groups_map
+
+
 def import_services_from_file(file_path: str) -> dict[str, DCWService]:
     file_name = os.path.basename(file_path)
     if not file_name.startswith('docker-compose.') or not file_name.endswith('.yml'):
@@ -107,10 +125,12 @@ def import_services_from_file(file_path: str) -> dict[str, DCWService]:
     services = {}
 
     with open(file_path) as f:
-        file_svcs = yaml.safe_load(f)['services']
-        for svc_name in file_svcs:
-            services[svc_name] = DCWService(
-                svc_name, config=file_svcs[svc_name])
+        dc_files = yaml.safe_load_all(f)
+        for file in dc_files:
+            file_svcs = file['services']
+            for svc_name in file_svcs:
+                services[svc_name] = DCWService(
+                    svc_name, config=file_svcs[svc_name])
 
     return services
 
@@ -121,5 +141,5 @@ def import_services_from_dir(dir_path: str) -> dict[str, DCWService]:
         file_svcs = import_services_from_file(
             os.path.join(dir_path, file_name))
         for svc in file_svcs:
-            services[svc.name] = svc
+            services[svc] = file_svcs[svc]
     return services
