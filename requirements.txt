@@ -11,3 +11,4 @@ pytest-cov
 GitPython
 docker
 cryptography
+docker-compose-diagram

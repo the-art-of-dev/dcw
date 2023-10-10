@@ -1,9 +1,14 @@
+# pylint: skip-file
 from dcw.environment import import_env_from_file
 from pprint import pprint as pp
 from dcw.service import import_services_from_file
 from dcw.deployment import make_deployment_specifications, DCWDeploymentMaker, import_deployment_maker_from_file
 from dcw.std import DockerComposeDeploymentMaker, K8SDeploymentMaker
 from dcw.context import DCWContext
+import docker_compose_diagram
+from docker_compose_diagram.di_container.facade import docker_compose_parser, plugins
+from docker_compose_diagram.renderer.base import Renderer
+from docker_compose_diagram.renderer.diagrams import DiagramsRenderer
 
 env = import_env_from_file('./hacking/dcw-envs/.checker.env')
 # pp(env.global_envs)
@@ -33,11 +38,27 @@ ctx = DCWContext(None, svcs, {env.name: env})
 
 depl_specs = make_deployment_specifications(env.name, 'FULL', ctx)
 
-# for dc in depl_specs:
-#     # print(dc.name)
-#     # for s in dc.services:
-#         # pp(dc.services[s])
-#     DCWDeploymentMaker.make_deployment(
-#         'std.k8s', dc, f'./hacking/k8s.test-svc-{dc.name}.yml')
+for dc in depl_specs:
+    # print(dc.name)
+    # for s in dc.services:
+        # pp(dc.services[s])
+    DCWDeploymentMaker.make_deployment(
+        'std.docker-compose', dc, f'./hacking/docker-compose-{dc.name}.yml')
 
 import_deployment_maker_from_file('hacking.test-maker')
+
+services = docker_compose_parser.parse(
+            file_path=f'./hacking/docker-compose-{dc.name}.yml',
+        )
+
+renderer: Renderer = DiagramsRenderer(
+            plugins=plugins,
+            config={
+            },
+        )
+
+
+renderer.render(
+    services=services,
+    destination_file=f'./hacking/docker-compose-{dc.name}',
+)

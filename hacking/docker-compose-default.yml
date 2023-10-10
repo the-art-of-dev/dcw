@@ -1,0 +1,42 @@
+networks:
+  check-net: {}
+services:
+  web-app-client:
+    depends_on:
+    - web-app-server
+    environment:
+      ACCESS_KEY: '13121312'
+      RUNTIME_ENV: dev
+      SECRET_KEY: ''
+      run.profile: dev
+    image: web-app-client:latest
+    labels:
+      dcw.kompose.service.loadbalancerip: 10.10.10.11
+      dcw.svc_groups: web-apps,full
+    networks:
+    - check-net
+    ports:
+    - 8080:8080
+  web-app-server:
+    environment:
+      DB_HOST: whost
+      DB_PASS: siguran
+      DB_USER: user
+      run.profile: dev
+    image: web-app-server
+    labels:
+      dcw.svc_groups: web-apps,full
+    networks:
+    - check-net
+    ports:
+    - 8081:80
+  web-client:
+    environment:
+      RUNTIME_ENV: dev
+    image: web-client:latest
+    labels:
+      dcw.svc_groups: web-clients,full
+    networks:
+    - check-net
+    ports:
+    - 8082:8082
