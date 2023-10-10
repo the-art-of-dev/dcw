@@ -1,3 +1,4 @@
+# pylint: skip-file
 from dcw.config import DCWConfig, DCWConfigMagic, import_config_from_file
 from dcw.service import DCWService, import_services_from_dir
 from dcw.environment import DCWEnv, import_envs_from_dir

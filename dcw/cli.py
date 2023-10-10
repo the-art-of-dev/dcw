@@ -1,31 +1,25 @@
+# pylint: skip-file
 import os
 import click
 from pprint import pprint as pp
-import enum
-import prettytable
-
+from logger import logger as lgg
 from dcw.context import DCWContext, import_dcw_context
 from dcw.service import map_service_groups
+from dcw.environment import DCWEnvMagicSettingType
 from dcw.deployment import DCWDeploymentSpecificationType
 from dcw.deployment import make_deployment_specifications
 from dcw.deployment import export_deployment_spec
 from dcw.deployment import DCWDeploymentMaker
 from dcw.std import DockerComposeDeploymentMaker, K8SDeploymentMaker
+from dcw.utils import table_print_columns
+import sys
 
+
+# Init deployment makers
 DockerComposeDeploymentMaker()
 K8SDeploymentMaker()
 
-
-class DCWUnitBundleOutputType(str, enum.Enum):
-    DOCKER_COMPOSE = "docek-compose"
-    KUBERNETES = "k8s"
-
-
-def table_print_columns(data_columns: [(str, [str])]):
-    tbl = prettytable.PrettyTable()
-    for (title, items) in data_columns:
-        tbl.add_column(title, items)
-    print(tbl)
+# Define cli application
 
 
 @click.group()
@@ -33,8 +27,7 @@ def table_print_columns(data_columns: [(str, [str])]):
 def app(config: str):
     import_dcw_context(config)
 
-
-# ------ SEVICE ------
+# ------ SERVICES ------
 
 
 @click.group('svc')
@@ -59,6 +52,41 @@ def svc_app_list():
         ('GLOBAL ENV', [s.get_global_envs() for s in svcs])
     ])
 
+
+@svc_app.command("show")
+@click.argument("svc_name", nargs=1)
+def svc_app_show(svc_name: str):
+    """Prints service structure"""
+    dcw_ctx = DCWContext()
+    if svc_name not in dcw_ctx.services:
+        lgg.error(f'Service {svc_name} not found.')
+        sys.exit(-1)
+    svc = dcw_ctx.services[svc_name]
+    pp(svc.as_dict())
+
+
+@svc_app.command("args")
+@click.argument("svc_names", nargs=-1)
+def svc_app_args(svc_names: [str]):
+    """Lists all service arguments"""
+    dcw_ctx = DCWContext()
+    for sn in svc_names:
+        if sn not in dcw_ctx.services:
+            lgg.error(f'Service {sn} not found.')
+            sys.exit(-1)
+
+    svc_args = set()
+
+    for sn in svc_names:
+        svc = dcw_ctx.services[sn]
+        svc_args.update(svc.get_global_envs())
+
+    table_print_columns([
+        ('#', [i+1 for i in range(len(svc_args))]),
+        ('NAME', [i for i in sorted(list(svc_args))]),
+    ])
+
+
 # ------ ENVIRONMENT ------
 
 
@@ -80,6 +108,32 @@ def env_app_list():
         ('NAME', [e.name for e in envs]),
         ('SERVICES', [e.services for e in envs]),
         ('SERVICE GROUPS', [e.svc_groups for e in envs]),
+    ])
+
+
+@env_app.command("show")
+@click.argument("env_name", nargs=1)
+def env_app_show(env_name: str):
+    """Prints environment structure"""
+    dcw_ctx = DCWContext()
+    if env_name not in dcw_ctx.environments:
+        lgg.error(f'Environment {env_name} not found.')
+        sys.exit(-1)
+    env = dcw_ctx.environments[env_name].as_dict()
+    is_dcw_magic = []
+    for en in env:
+        is_dm = ''
+        for dmst in DCWEnvMagicSettingType:
+            if en.startswith(dmst.value):
+                is_dm = '*'
+                break
+        is_dcw_magic.append(is_dm)
+
+    table_print_columns([
+        ('#', [i+1 for i in range(len(env))]),
+        ('NAME', [en for en in env]),
+        ('VALUE', [env[en] for en in env]),
+        ('DCW MAGIC', is_dcw_magic),
     ])
 
 # ------ SERVICE GROUP ------
@@ -135,12 +189,12 @@ def depl_app_make(env_name: str, spec_type: str, out: str):
 @depl_app.command('make')
 @click.argument('env_name', nargs=1)
 @click.option('--spec-type', default='FULL')
-@click.option('--depl-type', default='docker-compose')
+@click.option('--depl-type', default='std.docker-compose')
 @click.option('--out', default=None)
 def depl_app_make(env_name: str, spec_type: str, depl_type: str, out: str):
     specs = make_deployment_specifications(env_name, spec_type, DCWContext())
     for s in specs:
-        if out is None:
+        if spec_type == DCWDeploymentSpecificationType.FULL and out is None:
             DCWDeploymentMaker.make_deployment(depl_type, s, f'{s.name}.yml')
         elif spec_type == DCWDeploymentSpecificationType.FULL:
             DCWDeploymentMaker.make_deployment(depl_type, s, out)

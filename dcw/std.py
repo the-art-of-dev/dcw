@@ -1,6 +1,7 @@
+# pylint: skip-file
 import os
 import subprocess
-from dcw.deployment import DCWDeploymentSpecification, DCWDeploymentMaker
+from dcw.deployment import DCWDeploymentSpecification, DCWDeploymentMaker, DCWDeploymentExecute
 from dcw.utils import flatten
 import yaml
 from pprint import pprint as pp
@@ -18,6 +19,9 @@ class DockerComposeDeploymentMaker(DCWDeploymentMaker):
         with open(output_path, 'w') as f:
             yaml.safe_dump(dc_depl, f)
 
+class DockerComposeDeploymentExecute(DCWDeploymentExecute):
+    pass
+
 
 class K8SDeploymentMaker(DCWDeploymentMaker):
     def __init__(self) -> None:
@@ -29,7 +33,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
                 del depl_spec.services[svc]['depends_on']
 
         DCWDeploymentMaker.make_deployment(
-            'docker-compose', depl_spec, f'{output_path}.tmp.yml')
+            'std.docker-compose', depl_spec, f'{output_path}.tmp.yml')
         proc = subprocess.run(
             ['kompose', 'convert', '-f', f'{output_path}.tmp.yml', '--stdout'], capture_output=True, text=True)
         os.remove(f'{output_path}.tmp.yml')

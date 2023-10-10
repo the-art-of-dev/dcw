@@ -1,3 +1,4 @@
+# pylint: skip-file
 import copy
 import enum
 import os
@@ -95,7 +96,7 @@ class DCWEnv:
 
     def __match_selector(self, target: str, selector: str) -> bool:
         selector = selector.replace(
-            DCWEnvMagicSettingsSelectorWildcard.ANY, '\S+')
+            DCWEnvMagicSettingsSelectorWildcard.ANY, '\\S+')
         regex = re.compile(rf'^{selector}$')
         return regex.match(target)
 

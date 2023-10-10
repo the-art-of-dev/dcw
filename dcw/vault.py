@@ -1,3 +1,4 @@
+# pylint: skip-file
 from cryptography.fernet import Fernet
 from hashlib import sha256
 from base64 import b64encode

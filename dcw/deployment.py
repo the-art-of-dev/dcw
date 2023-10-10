@@ -1,3 +1,4 @@
+# pylint: skip-file
 from abc import ABC, abstractmethod
 import enum
 from dcw.environment import DCWEnv
@@ -5,6 +6,7 @@ import os
 import yaml
 from pprint import pprint as pp
 from dcw.context import DCWContext
+import importlib
 
 
 class DCWDeploymentSpecificationType(str, enum.Enum):
@@ -143,17 +145,48 @@ class DCWDeploymentMaker(ABC):
     deployment_makers: dict = {}
 
     def __init__(self, name, deployment_type) -> None:
+        super().__init__()
         self.name = name
         self.deployment_type = deployment_type
-        DCWDeploymentMaker.deployment_makers[deployment_type] = self
+        DCWDeploymentMaker.deployment_makers[name] = self
 
     @abstractmethod
     def _make_deployment(self, depl_spec: DCWDeploymentSpecification, output_path: str):
         pass
 
     @staticmethod
-    def make_deployment(depl_type: str, depl_spec: DCWDeploymentSpecification, output_path: str):
-        if depl_type not in DCWDeploymentMaker.deployment_makers:
-            raise Exception(f'Deployment Maker {depl_type} not found.')
-        DCWDeploymentMaker.deployment_makers[depl_type]._make_deployment(
+    def make_deployment(depl_maker_name: str, depl_spec: DCWDeploymentSpecification, output_path: str):
+        if depl_maker_name not in DCWDeploymentMaker.deployment_makers:
+            raise Exception(f'Deployment Maker {depl_maker_name} not found.')
+        DCWDeploymentMaker.deployment_makers[depl_maker_name]._make_deployment(
             depl_spec, output_path)
+
+
+def import_deployment_maker_from_file(maker_file_path: str):
+    # maker = importlib.import_module(maker_file_path)
+    pass
+
+
+def import_deployment_makers_from_dir():
+    pass
+
+
+class DCWDeploymentExecute(ABC):
+    deployment_execs: dict = {}
+
+    def __init__(self, name: str, deployment_type: str) -> None:
+        super().__init__()
+        self.name = name
+        self.deployment_type = deployment_type
+        DCWDeploymentExecute.deployment_execs[name] = self
+
+    @abstractmethod
+    def _execute_command(self, depl_path: str, command: [str]):
+        pass
+
+    @staticmethod
+    def execute_command(depl_exec_name: str, depl_path: str, command: [str]):
+        if depl_exec_name not in DCWDeploymentExecute.deployment_execs:
+            raise Exception(f'Deployment Maker {depl_exec_name} not found.')
+        DCWDeploymentExecute.deployment_execs[depl_exec_name]._execute_command(
+            depl_path, command)

@@ -1,7 +1,10 @@
+# pylint: skip-file
 import collections
 import re
 import string
 import itertools
+
+import prettytable
 
 def template_env_vars(text: str):
     placeholders = re.findall(r'[^$]\$\{([^}]*)\}', text)
@@ -76,3 +79,9 @@ def deep_update(d, u):
         else:
             d[k] = v
     return d
+
+def table_print_columns(data_columns: [(str, [str])]):
+    tbl = prettytable.PrettyTable()
+    for (title, items) in data_columns:
+        tbl.add_column(title, items)
+    print(tbl)

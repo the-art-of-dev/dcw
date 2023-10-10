@@ -1,3 +1,4 @@
+# pylint: skip-file
 import enum
 from dcw.utils import template_env_vars, render_template
 import yaml
