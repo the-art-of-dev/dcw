@@ -40,7 +40,9 @@ class DCWService:
             if isinstance(self.config['environment'], list):
                 for ev in self.config['environment']:
                     (env, val) = ev.split('=')
-                    self.config[env] = val
+                    self.environment[env] = val
+                
+                self.config['environment'] = self.environment
             else:
                 self.environment = self.config['environment']
 
