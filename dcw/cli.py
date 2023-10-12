@@ -2,7 +2,7 @@
 import os
 import click
 from pprint import pprint as pp
-from logger import logger as lgg
+from dcw.logger import logger as lgg
 from dcw.context import DCWContext, import_dcw_context
 from dcw.service import map_service_groups
 from dcw.environment import DCWEnvMagicSettingType
