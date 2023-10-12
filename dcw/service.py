@@ -37,7 +37,7 @@ class DCWService:
 
     def __set_environment_from_config(self):
         if 'environment' in self.config:
-            if self.config['environment'] is list:
+            if isinstance(self.config['environment'], list):
                 for ev in self.config['environment']:
                     (env, val) = ev.split('=')
                     self.config[env] = val
