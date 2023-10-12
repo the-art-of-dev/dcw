@@ -39,18 +39,26 @@ app.add_command(svc_app)
 
 
 @svc_app.command("list")
-def svc_app_list():
+@click.option("--ports", default=False)
+@click.option("--global-env", default=False)
+def svc_app_list(ports: bool, global_env: bool):
     """List all dcw services"""
     dcw_ctx = DCWContext()
     svcs = sorted(dcw_ctx.services.values(), key=lambda s: s.name)
-    table_print_columns([
+    clmns = [
         ('#', [i+1 for i in range(len(svcs))]),
         ('NAME', [s.name for s in svcs]),
         ('GROUPS', [s.groups for s in svcs]),
         ('IMAGE', [s.image for s in svcs]),
-        ('PORTS', [s.ports for s in svcs]),
-        ('GLOBAL ENV', [s.get_global_envs() for s in svcs])
-    ])
+    ]
+
+    if ports:
+        clmns.append(('PORTS', [s.ports for s in svcs]))
+
+    if global_env:
+        clmns.append(('GLOBAL ENV', [s.get_global_envs() for s in svcs]))
+
+    table_print_columns(clmns)
 
 
 @svc_app.command("show")
