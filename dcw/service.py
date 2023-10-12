@@ -121,7 +121,7 @@ def map_service_groups(svcs: dict[str, DCWService]) -> dict[str, ServiceGroup]:
 def import_services_from_file(file_path: str) -> dict[str, DCWService]:
     file_name = os.path.basename(file_path)
     if not file_name.startswith('docker-compose.') or not file_name.endswith('.yml'):
-        return None
+        return {}
 
     services = {}
 
