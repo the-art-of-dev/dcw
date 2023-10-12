@@ -133,6 +133,10 @@ class DCWEnv:
         for svc_selector in self.service_configs:
             if self.__match_selector(svc_copy.name, svc_selector):
                 svc_copy.apply_config(self.service_configs[svc_selector])
+        for svc_group_selector in self.svc_group_configs:
+            for svc_group in svc_copy.groups:
+                if self.__match_selector(svc_group, svc_group_selector):
+                    svc_copy.apply_config(self.svc_group_configs[svc_group_selector])
         svc_copy.apply_global_env(self.global_envs)
         return svc_copy
 
