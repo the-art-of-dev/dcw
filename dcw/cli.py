@@ -39,8 +39,8 @@ app.add_command(svc_app)
 
 
 @svc_app.command("list")
-@click.option("--ports", default=False)
-@click.option("--global-env", default=False)
+@click.option("--ports", is_flag=True, default=False)
+@click.option("--global-env", is_flag=True, default=False)
 def svc_app_list(ports: bool, global_env: bool):
     """List all dcw services"""
     dcw_ctx = DCWContext()
