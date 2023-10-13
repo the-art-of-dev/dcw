@@ -5,7 +5,7 @@ from pprint import pprint as pp
 from dcw.logger import logger as lgg
 from dcw.context import DCWContext, import_dcw_context
 from dcw.service import map_service_groups
-from dcw.environment import DCWEnvMagicSettingType
+from dcw.environment import DCWEnvMagicSettingType, list_global_environment_variables
 from dcw.deployment import DCWDeploymentSpecificationType
 from dcw.deployment import make_deployment_specifications
 from dcw.deployment import export_deployment_spec
@@ -143,6 +143,23 @@ def env_app_show(env_name: str):
         ('VALUE', [env[en] for en in env]),
         ('DCW MAGIC', is_dcw_magic),
     ])
+
+
+@env_app.command("all-global")
+@click.argument("env_name", nargs=1)
+def env_app_all_global(env_name: str):
+    """Prints all environment global variables needed"""
+    dcw_ctx = DCWContext()
+    if env_name not in dcw_ctx.environments:
+        lgg.error(f'Environment {env_name} not found.')
+        sys.exit(-1)
+
+    all_vars = list_global_environment_variables(
+        dcw_ctx.environments[env_name], dcw_ctx.services)
+    table_print_columns(
+        ('#', [i+1 for i in range(len(all_vars))]),
+        ('NAME', all_vars)
+    )
 
 # ------ SERVICE GROUP ------
 

@@ -136,7 +136,8 @@ class DCWEnv:
         for svc_group_selector in self.svc_group_configs:
             for svc_group in svc_copy.groups:
                 if self.__match_selector(svc_group, svc_group_selector):
-                    svc_copy.apply_config(self.svc_group_configs[svc_group_selector])
+                    svc_copy.apply_config(
+                        self.svc_group_configs[svc_group_selector])
         svc_copy.apply_global_env(self.global_envs)
         return svc_copy
 
@@ -192,3 +193,20 @@ def import_envs_from_dir(dir_path: str) -> dict[str, DCWEnv]:
             continue
         envs[env.name] = env
     return envs
+
+
+def list_global_environment_variables(env: DCWEnv, all_svcs: dict[str, DCWService]) -> [str]:
+    all_global_env_vars = set()
+
+    for svc_name in env.services:
+        if svc_name not in all_svcs:
+            raise Exception(f'SERVICE {svc_name} DOES NOT EXIST!')
+        all_global_env_vars.update(all_svcs[svc_name].get_global_envs())
+
+    for group_name in env.svc_groups:
+        svcs = filter(lambda s: group_name in s.groups,
+                      [all_svcs[s] for s in all_svcs])
+        for s in svcs:
+            all_global_env_vars.update(s.get_global_envs())
+
+    return all_global_env_vars
