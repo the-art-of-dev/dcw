@@ -158,7 +158,7 @@ def env_app_all_global(env_name: str):
         dcw_ctx.environments[env_name], dcw_ctx.services)
     table_print_columns([
         ('#', [i+1 for i in range(len(all_vars))]),
-        ('NAME', all_vars)
+        ('NAME', [v for v in all_vars])
     ])
 
 # ------ SERVICE GROUP ------
