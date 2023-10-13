@@ -156,10 +156,10 @@ def env_app_all_global(env_name: str):
 
     all_vars = list_global_environment_variables(
         dcw_ctx.environments[env_name], dcw_ctx.services)
-    table_print_columns(
+    table_print_columns([
         ('#', [i+1 for i in range(len(all_vars))]),
         ('NAME', all_vars)
-    )
+    ])
 
 # ------ SERVICE GROUP ------
 
