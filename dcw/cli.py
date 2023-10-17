@@ -202,6 +202,7 @@ app.add_command(group_app)
 
 
 @group_app.command("list")
+@cli_error_handler
 def group_app_list(verbose: bool = False):
     """List all dcw units"""
     dcw_ctx = DCWContext()
@@ -229,7 +230,8 @@ app.add_command(depl_app)
 @click.argument('env_name', nargs=1)
 @click.option('--spec-type', default='FULL')
 @click.option('--out', default=None)
-def depl_app_make(env_name: str, spec_type: str, out: str):
+@cli_error_handler
+def depl_app_make_spec(env_name: str, spec_type: str, out: str):
     specs = make_deployment_specifications(env_name, spec_type, DCWContext())
     for s in specs:
         if out is None:
@@ -245,6 +247,7 @@ def depl_app_make(env_name: str, spec_type: str, out: str):
 @click.option('--spec-type', default='FULL')
 @click.option('--depl-type', default='std.docker-compose')
 @click.option('--out', default=None)
+@cli_error_handler
 def depl_app_make(env_name: str, spec_type: str, depl_type: str, out: str):
     specs = make_deployment_specifications(env_name, spec_type, DCWContext())
     for s in specs:
