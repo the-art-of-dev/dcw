@@ -64,7 +64,7 @@ class DCWService:
 
     def __set_groups_from_label(self):
         if DCWServiceMagicLabels.GROUPS in self.labels:
-            self.groups = self.labels[DCWServiceMagicLabels.GROUPS].split(',')
+            self.groups = [g.strip() for g in self.labels[DCWServiceMagicLabels.GROUPS].split(',')]
 
     def __set_from_config(self):
         self.__set_image_from_config()
