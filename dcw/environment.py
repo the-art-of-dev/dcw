@@ -84,8 +84,8 @@ class DCWEnv:
         prop_selector = self.__prop_selector_from_magic_env_name(env_name)
         prop_selector_type = self.__prop_selector_type_from_magic_env_name(
             env_name)
-        prop_value = env_value.split(
-            ',') if env_name.endswith('[]') else env_value
+        prop_value = [i.strip() for i in env_value.split(
+            ',')] if env_name.endswith('[]') else env_value
 
         if prop_selector_type == DCWEnvMagicSettingsPropertySelectorType.OBJECT:
             return dot_env_to_dict_rec(prop_selector, prop_value)
@@ -224,5 +224,5 @@ def list_all_environment_services(env: DCWEnv, all_svcs: dict[str, DCWService]) 
                       [all_svcs[s] for s in all_svcs])
         for s in svcs:
             all_env_svcs.append(s.name)
-    
+
     return [s for s in set(all_env_svcs)]
