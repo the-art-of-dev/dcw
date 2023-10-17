@@ -210,3 +210,19 @@ def list_global_environment_variables(env: DCWEnv, all_svcs: dict[str, DCWServic
             all_global_env_vars.update(s.get_global_envs())
 
     return all_global_env_vars
+
+
+def list_all_environment_services(env: DCWEnv, all_svcs: dict[str, DCWService]) -> [str]:
+    all_svcs = set()
+    for svc_name in env.services:
+        if svc_name not in all_svcs:
+            raise Exception(f'SERVICE {svc_name} DOES NOT EXIST!')
+        all_svcs.update(svc_name)
+
+    for group_name in env.svc_groups:
+        svcs = filter(lambda s: group_name in s.groups,
+                      [all_svcs[s] for s in all_svcs])
+        for s in svcs:
+            all_svcs.update(s.name)
+    
+    return [s for s in all_svcs]

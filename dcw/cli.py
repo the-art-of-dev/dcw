@@ -5,7 +5,7 @@ from pprint import pprint as pp
 from dcw.logger import logger as lgg
 from dcw.context import DCWContext, import_dcw_context
 from dcw.service import map_service_groups
-from dcw.environment import DCWEnvMagicSettingType, list_global_environment_variables
+from dcw.environment import DCWEnvMagicSettingType, list_global_environment_variables, list_all_environment_services
 from dcw.deployment import DCWDeploymentSpecificationType
 from dcw.deployment import make_deployment_specifications
 from dcw.deployment import export_deployment_spec
@@ -21,9 +21,19 @@ K8SDeploymentMaker()
 
 # Define cli application
 
+def cli_error_handler(func):
+    def inner_func(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except Exception as e:
+            lgg.error(f'{e.args[0]}')
+            sys.exit(-1)
+    return inner_func
+
 
 @click.group()
 @click.option('--config', default='.dcwrc.yaml')
+@cli_error_handler
 def app(config: str):
     import_dcw_context(config)
 
@@ -41,6 +51,7 @@ app.add_command(svc_app)
 @svc_app.command("list")
 @click.option("--ports", is_flag=True, default=False)
 @click.option("--global-env", is_flag=True, default=False)
+@cli_error_handler
 def svc_app_list(ports: bool, global_env: bool):
     """List all dcw services"""
     dcw_ctx = DCWContext()
@@ -63,25 +74,25 @@ def svc_app_list(ports: bool, global_env: bool):
 
 @svc_app.command("show")
 @click.argument("svc_name", nargs=1)
+@cli_error_handler
 def svc_app_show(svc_name: str):
     """Prints service structure"""
     dcw_ctx = DCWContext()
     if svc_name not in dcw_ctx.services:
-        lgg.error(f'Service {svc_name} not found.')
-        sys.exit(-1)
+        raise Exception(f'Service {svc_name} not found.')
     svc = dcw_ctx.services[svc_name]
     pp(svc.as_dict())
 
 
 @svc_app.command("args")
 @click.argument("svc_names", nargs=-1)
+@cli_error_handler
 def svc_app_args(svc_names: [str]):
     """Lists all service arguments"""
     dcw_ctx = DCWContext()
     for sn in svc_names:
         if sn not in dcw_ctx.services:
-            lgg.error(f'Service {sn} not found.')
-            sys.exit(-1)
+            raise Exception(f'Service {sn} not found.')
 
     svc_args = set()
 
@@ -106,6 +117,7 @@ def env_app():
 app.add_command(env_app)
 
 
+@cli_error_handler
 @env_app.command("list")
 def env_app_list():
     """List all dcw environments"""
@@ -121,12 +133,12 @@ def env_app_list():
 
 @env_app.command("show")
 @click.argument("env_name", nargs=1)
+@cli_error_handler
 def env_app_show(env_name: str):
     """Prints environment structure"""
     dcw_ctx = DCWContext()
     if env_name not in dcw_ctx.environments:
-        lgg.error(f'Environment {env_name} not found.')
-        sys.exit(-1)
+        raise Exception(f'Environment {env_name} not found.')
     env = dcw_ctx.environments[env_name].as_dict()
     is_dcw_magic = []
     for en in env:
@@ -147,18 +159,35 @@ def env_app_show(env_name: str):
 
 @env_app.command("all-global")
 @click.argument("env_name", nargs=1)
+@cli_error_handler
 def env_app_all_global(env_name: str):
     """Prints all environment global variables needed"""
     dcw_ctx = DCWContext()
     if env_name not in dcw_ctx.environments:
-        lgg.error(f'Environment {env_name} not found.')
-        sys.exit(-1)
+        raise Exception(f'Environment {env_name} not found.')
 
     all_vars = list_global_environment_variables(
         dcw_ctx.environments[env_name], dcw_ctx.services)
     table_print_columns([
         ('#', [i+1 for i in range(len(all_vars))]),
         ('NAME', [v for v in all_vars])
+    ])
+
+
+@env_app.command("all-svcs")
+@click.argument("env_name", nargs=1)
+@cli_error_handler
+def env_app_all_svcs(env_name: str):
+    """Prints all environment services"""
+    dcw_ctx = DCWContext()
+    if env_name not in dcw_ctx.environments:
+        raise Exception(f'Environment {env_name} not found.')
+
+    all_svcs = list_all_environment_services(
+        dcw_ctx.environments[env_name], dcw_ctx.services)
+    table_print_columns([
+        ('#', [i+1 for i in range(len(all_svcs))]),
+        ('NAME', all_svcs)
     ])
 
 # ------ SERVICE GROUP ------
