@@ -39,7 +39,7 @@ class DCWService:
         if 'environment' in self.config:
             if isinstance(self.config['environment'], list):
                 for ev in self.config['environment']:
-                    (env, val) = ev.split('=')
+                    (env, val) = ev.split('=')[0], '='.join(ev.split('=')[1:])
                     self.environment[env] = val
                 
                 self.config['environment'] = self.environment
@@ -51,7 +51,7 @@ class DCWService:
             self.config['labels'] = {}
         if isinstance(self.config['labels'], list):
             for lv in self.config['labels']:
-                (lbl, val) = lv.split('=')
+                (lbl, val) = lv.split('=')[0], '='.join(lv.split('=')[1:])
                 self.labels[lbl] = val
 
             self.config['labels'] = self.labels
