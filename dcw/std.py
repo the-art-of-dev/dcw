@@ -23,7 +23,7 @@ class DockerComposeDeploymentMaker(DCWDeploymentMaker):
         named_volumes = filter(lambda x: x is not None, [vn if self.__is_named_volume(
             vn) else None for vn in flatten([dc_depl['services'][sn]['volumes'] for sn in dc_depl['services']])])
         
-        dc_depl['volumes'] = {nv: {} for nv in named_volumes}
+        dc_depl['volumes'] = {nv.split(':')[0]: {} for nv in named_volumes}
 
         with open(output_path, 'w') as f:
             yaml.safe_dump(dc_depl, f)
