@@ -11,13 +11,23 @@ class DockerComposeDeploymentMaker(DCWDeploymentMaker):
     def __init__(self) -> None:
         super().__init__("std.docker-compose", "docker-compose")
 
+    def __is_named_volume(self, volume: str) -> bool:
+        vn = volume.split(':')[0]
+        return '.' not in vn and '/' not in vn
+
     def _make_deployment(self, depl_spec: DCWDeploymentSpecification, output_path: str):
         dc_depl = {'services': depl_spec.services, 'networks': {}}
         dc_depl['networks'] = {nn: {} for nn in set(
             flatten([dc_depl['services'][sn]['networks'] for sn in dc_depl['services']]))}
 
+        named_volumes = filter(lambda x: x is not None, [vn if self.__is_named_volume(
+            vn) else None for vn in flatten([dc_depl['services'][sn]['volumes'] for sn in dc_depl['services']])])
+        
+        dc_depl['volumes'] = {nv: {} for nv in named_volumes}
+
         with open(output_path, 'w') as f:
             yaml.safe_dump(dc_depl, f)
+
 
 class DockerComposeDeploymentExecute(DCWDeploymentExecute):
     pass
@@ -61,5 +71,5 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
                 continue
             if kind_config['kind'].upper() == 'SERVICE':
                 self.__enrich_k8s_svc_deployment(kind_config, depl_spec)
-            
+
         return new_k8s_kinds
