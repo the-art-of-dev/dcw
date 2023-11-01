@@ -13,7 +13,7 @@ class DockerComposeDeploymentMaker(DCWDeploymentMaker):
 
     def __is_named_volume(self, volume: str) -> bool:
         vn = volume.split(':')[0]
-        return '.' not in vn and '/' not in vn
+        return '.' not in vn and '/' not in vn and '\\' not in vn
 
     def _make_deployment(self, depl_spec: DCWDeploymentSpecification, output_path: str):
         dc_depl = {'services': depl_spec.services, 'networks': {}}

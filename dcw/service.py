@@ -24,6 +24,7 @@ class DCWService:
         self.environment = {}
         self.labels = {}
         self.networks = []
+        self.volumes = []
         self.config = config if config is not None else {}
         self.__set_from_config()
 
@@ -41,7 +42,7 @@ class DCWService:
                 for ev in self.config['environment']:
                     (env, val) = ev.split('=')[0], '='.join(ev.split('=')[1:])
                     self.environment[env] = val
-                
+
                 self.config['environment'] = self.environment
             else:
                 self.environment = self.config['environment']
@@ -61,10 +62,19 @@ class DCWService:
     def __set_networks_from_config(self):
         if 'networks' in self.config:
             self.networks = self.config['networks']
+        else:
+            self.config['networks'] = self.networks
+
+    def __set_volumes_from_config(self):
+        if 'volumes' in self.config:
+            self.volumes = self.config['volumes']
+        else:
+            self.config['volumes'] = self.volumes
 
     def __set_groups_from_label(self):
         if DCWServiceMagicLabels.GROUPS in self.labels:
-            self.groups = [g.strip() for g in self.labels[DCWServiceMagicLabels.GROUPS].split(',')]
+            self.groups = [
+                g.strip() for g in self.labels[DCWServiceMagicLabels.GROUPS].split(',')]
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -72,6 +82,7 @@ class DCWService:
         self.__set_environment_from_config()
         self.__set_labels_from_config()
         self.__set_networks_from_config()
+        self.__set_volumes_from_config()
         self.__set_groups_from_label()
 
     def __str__(self) -> str:
