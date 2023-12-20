@@ -65,7 +65,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
 
         service = depl_spec.services[name]
         if 'dcw.kompose.service.loadbalancerip' in service['labels']:
-            k8s_svc['annotations']['service.beta.kubernetes.io/azure-load-balancer-internal'] = 'true'
+            k8s_svc['metadata']['annotations']['service.beta.kubernetes.io/azure-load-balancer-internal'] = 'true'
             k8s_svc['spec']['loadBalancerIP'] = service['labels']['dcw.kompose.service.loadbalancerip']
 
     def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
