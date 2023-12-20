@@ -22,7 +22,7 @@ class DockerComposeDeploymentMaker(DCWDeploymentMaker):
 
         named_volumes = filter(lambda x: x is not None, [vn if self.__is_named_volume(
             vn) else None for vn in flatten([dc_depl['services'][sn]['volumes'] for sn in dc_depl['services']])])
-        
+
         dc_depl['volumes'] = {nv.split(':')[0]: {} for nv in named_volumes}
 
         with open(output_path, 'w') as f:
@@ -51,12 +51,12 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
             print(proc.stderr)
             return
         k8s_kinds = yaml.safe_load_all(proc.stdout)
-        k8s_kinds = self.__enrich_k8s_deployment(k8s_kinds, depl_spec)
+        k8s_kinds = self.__enrich_k8s(k8s_kinds, depl_spec)
 
         with open(output_path, 'w') as f:
             yaml.safe_dump_all(k8s_kinds, f)
 
-    def __enrich_k8s_svc_deployment(self, k8s_svc: dict, depl_spec: DCWDeploymentSpecification):
+    def __enrich_k8s_svc(self, k8s_svc: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_svc['metadata']['name']
         if name not in depl_spec.services:
             return
@@ -64,12 +64,25 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
         if 'dcw.kompose.service.loadbalancerip' in service['labels']:
             k8s_svc['spec']['loadBalancerIP'] = service['labels']['dcw.kompose.service.loadbalancerip']
 
-    def __enrich_k8s_deployment(self, k8s_kinds, depl_spec: DCWDeploymentSpecification):
+    def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
+        name: str = k8s_kind['metadata']['name']
+        if name not in depl_spec.services:
+            return
+
+        service = depl_spec.services[name]
+        if 'dcw.kompose.namespace' in service['labels']:
+            k8s_kind['metadata']['namespace'] = service['labels']['dcw.kompose.namespace']
+
+        # specific kinds
+        if k8s_kind['kind'].upper() == 'SERVICE':
+            self.__enrich_k8s_svc(k8s_kind, depl_spec)
+
+    def __enrich_k8s(self, k8s_kinds, depl_spec: DCWDeploymentSpecification):
         new_k8s_kinds = list(k8s_kinds)[:]
         for kind_config in new_k8s_kinds:
             if 'kind' not in kind_config:
                 continue
-            if kind_config['kind'].upper() == 'SERVICE':
-                self.__enrich_k8s_svc_deployment(kind_config, depl_spec)
+
+            self.__enrich_k8s_kind(kind_config, depl_spec)
 
         return new_k8s_kinds
