@@ -62,6 +62,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
             return
         service = depl_spec.services[name]
         if 'dcw.kompose.service.loadbalancerip' in service['labels']:
+            print('dimra')
             k8s_svc['spec']['loadBalancerIP'] = service['labels']['dcw.kompose.service.loadbalancerip']
 
     def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
