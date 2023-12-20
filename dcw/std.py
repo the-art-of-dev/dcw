@@ -58,6 +58,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
 
     def __enrich_k8s_svc(self, k8s_svc: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_svc['metadata']['name']
+        print(f'svc enrich {name}')
         if name not in depl_spec.services:
             return
         service = depl_spec.services[name]
