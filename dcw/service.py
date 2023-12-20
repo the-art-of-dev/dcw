@@ -5,7 +5,8 @@ import yaml
 import os
 from dcw.utils import deep_update
 from dataclasses import dataclass
-
+from ast import literal_eval as make_tuple
+import copy
 
 class DCWServiceMagicLabels(str, enum.Enum):
     GROUPS = 'dcw.svc_groups'
@@ -13,7 +14,7 @@ class DCWServiceMagicLabels(str, enum.Enum):
 
 class DCWService:
     """DCW Service represents a docker service defined in a docker-compose.yml file"""
-
+    
     def __init__(self,
                  name: str,
                  config: dict = None) -> None:
@@ -25,6 +26,7 @@ class DCWService:
         self.labels = {}
         self.networks = []
         self.volumes = []
+        self.extra_hosts = [] # extra_host == (HOST,IP)
         self.config = config if config is not None else {}
         self.__set_from_config()
 
@@ -75,6 +77,21 @@ class DCWService:
         if DCWServiceMagicLabels.GROUPS in self.labels:
             self.groups = [
                 g.strip() for g in self.labels[DCWServiceMagicLabels.GROUPS].split(',')]
+            
+    def __set_extra_hosts_from_config(self):
+        if 'extra_hosts' in self.config and isinstance(self.config['extra_hosts'], list):
+            for eh in self.config['extra_hosts']:
+                if isinstance(eh, str) and eh.find('=') != -1:
+                    new_eh = (eh[:eh.find('=')], eh[eh.find('=')+1:])
+                elif isinstance(eh, str) and eh.find(':') != -1:
+                    new_eh = (eh[:eh.find(':')], eh[eh.find(':')+1:])
+                else:
+                    raise Exception(f'EXTRA HOST "{eh}" NOT IN SUPPORTED FORMAT')
+
+                self.extra_hosts.append(new_eh)
+        else:
+            self.config['extra_hosts'] = [f'{eh[0]}={eh[1]}' for eh in self.extra_hosts]
+            
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -84,6 +101,7 @@ class DCWService:
         self.__set_networks_from_config()
         self.__set_volumes_from_config()
         self.__set_groups_from_label()
+        self.__set_extra_hosts_from_config()
 
     def __str__(self) -> str:
         return yaml.safe_dump(self.as_dict())

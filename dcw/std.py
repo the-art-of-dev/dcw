@@ -1,6 +1,7 @@
 # pylint: skip-file
 import os
 import subprocess
+from dcw.service import DCWService
 from dcw.deployment import DCWDeploymentSpecification, DCWDeploymentMaker, DCWDeploymentExecute
 from dcw.utils import flatten
 import yaml
@@ -68,6 +69,22 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
             k8s_svc['metadata']['annotations']['service.beta.kubernetes.io/azure-load-balancer-internal'] = 'true'
             k8s_svc['spec']['loadBalancerIP'] = service['labels']['dcw.kompose.service.loadbalancerip']
 
+    def __enrich_k8s_deployment(self, k8s_deployment: dict, depl_spec: DCWDeploymentSpecification):
+        name: str = k8s_deployment['metadata']['name']
+        if name not in depl_spec.services:
+            return
+
+        service = DCWService(name, depl_spec.services[name])
+        for eh in service.extra_hosts:
+            k8s_deployment['spec']['template']['spec']['hostAliases'] = [
+                {
+                    'ip': eh[1],
+                    'hostnames':[
+                        eh[0]
+                    ]
+                }
+            ]
+
     def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_kind['metadata']['name']
         if name not in depl_spec.services and name.endswith('-tcp'):
@@ -82,6 +99,8 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
         # specific kinds
         if k8s_kind['kind'].upper() == 'SERVICE':
             self.__enrich_k8s_svc(k8s_kind, depl_spec)
+        if k8s_kind['kind'].upper() == 'DEPLOYMENT':
+            self.__enrich_k8s_deployment(k8s_kind, depl_spec)
 
     def __enrich_k8s(self, k8s_kinds, depl_spec: DCWDeploymentSpecification):
         new_k8s_kinds = list(k8s_kinds)[:]
