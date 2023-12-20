@@ -58,7 +58,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
 
     def __enrich_k8s_svc(self, k8s_svc: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_svc['metadata']['name']
-        if name.endswith('-tcp'):
+        if name not in depl_spec.services and name.endswith('-tcp'):
             name = name[:-4]
         if name not in depl_spec.services:
             return
@@ -69,7 +69,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
 
     def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_kind['metadata']['name']
-        if name.endswith('-tcp'):
+        if name not in depl_spec.services and name.endswith('-tcp'):
             name = name[:-4]
         if name not in depl_spec.services:
             return
