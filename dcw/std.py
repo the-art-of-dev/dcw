@@ -75,6 +75,7 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
         if 'dcw.kompose.namespace' in service['labels']:
             k8s_kind['metadata']['namespace'] = service['labels']['dcw.kompose.namespace']
 
+        print(k8s_kind['kind'].upper())
         # specific kinds
         if k8s_kind['kind'].upper() == 'SERVICE':
             self.__enrich_k8s_svc(k8s_kind, depl_spec)
