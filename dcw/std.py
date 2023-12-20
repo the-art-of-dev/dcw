@@ -58,16 +58,19 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
 
     def __enrich_k8s_svc(self, k8s_svc: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_svc['metadata']['name']
-        print(f'svc enrich {name}')
+        if name.endswith('-tcp'):
+            name = name[:-4]
         if name not in depl_spec.services:
             return
+        
         service = depl_spec.services[name]
         if 'dcw.kompose.service.loadbalancerip' in service['labels']:
-            print('dimra')
             k8s_svc['spec']['loadBalancerIP'] = service['labels']['dcw.kompose.service.loadbalancerip']
 
     def __enrich_k8s_kind(self, k8s_kind: dict, depl_spec: DCWDeploymentSpecification):
         name: str = k8s_kind['metadata']['name']
+        if name.endswith('-tcp'):
+            name = name[:-4]
         if name not in depl_spec.services:
             return
 
@@ -75,7 +78,6 @@ class K8SDeploymentMaker(DCWDeploymentMaker):
         if 'dcw.kompose.namespace' in service['labels']:
             k8s_kind['metadata']['namespace'] = service['labels']['dcw.kompose.namespace']
 
-        print(k8s_kind['kind'].upper())
         # specific kinds
         if k8s_kind['kind'].upper() == 'SERVICE':
             self.__enrich_k8s_svc(k8s_kind, depl_spec)
