@@ -1,3 +1,0 @@
-- name: Fake-copy
-  debug:
-      msg: "Test copy"

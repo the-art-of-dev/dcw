@@ -143,9 +143,6 @@ class DCWTask:
             cmd.append(f'--{argn}')
             cmd.append(argv)
 
-
-        pp(cmd)
-        
         inv_prg.run(cmd)
 
     def as_dict(self):

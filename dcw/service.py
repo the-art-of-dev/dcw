@@ -103,13 +103,20 @@ class DCWService:
             task_sel = lbl[len(DCWServiceMagicLabels.TASK_SELECTOR):]
             prop_sel = task_sel
 
-            if task_sel.startswith('['):
-                prop_sel = task_sel[task_sel.index('].')+2:]
-                task_sel = task_sel[1:task_sel.index(']')]
+            if task_sel.startswith('[') and task_sel.find('].') != -1:
+                prop_sel = task_sel[task_sel.find('].')+2:]
+                task_sel = task_sel[1:task_sel.find(']')]
+            elif task_sel.startswith('['):
+                prop_sel = None
+                task_sel = task_sel[1:task_sel.find(']')]
             else:
-                task_sel = task_sel.split('.')[0]
-                prop_sel = lbl[len(DCWServiceMagicLabels.TASK_SELECTOR + task_sel + '.'):]
-
+                task_parts = task_sel.split('.')
+                task_sel = task_parts[0]
+                if len(task_parts) == 1:
+                    prop_sel = None
+                else:
+                    prop_sel = lbl[len(DCWServiceMagicLabels.TASK_SELECTOR + task_sel + '.'):]
+            
             dcw_task = None
             existing = list(filter(lambda t: t['name'] == task_sel, self.tasks))
             if len(existing) > 0:
@@ -123,7 +130,9 @@ class DCWService:
                 }
                 self.tasks.append(dcw_task)
 
-            selector_value = {prop_sel: self.labels[lbl]}
+            selector_value = {}
+            if prop_sel is not None:
+                selector_value[prop_sel] = self.labels[lbl]
             dcw_task['args'] = deep_update(
                 dcw_task['args'], selector_value)
 
