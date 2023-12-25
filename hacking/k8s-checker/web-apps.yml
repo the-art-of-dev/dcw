@@ -5,9 +5,8 @@ metadata:
     dcw.kompose.namespace: checker
     dcw.kompose.service.loadbalancerip: 10.10.10.10
     dcw.svc_groups: web-apps,full
-    kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+    kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
     kompose.version: 1.30.0 (HEAD)
-    service.beta.kubernetes.io/azure-load-balancer-internal: 'true'
   creationTimestamp: null
   labels:
     io.kompose.service: web-app-client
@@ -31,9 +30,8 @@ metadata:
     dcw.kompose.namespace: checker
     dcw.kompose.service.loadbalancerip: 10.10.10.10
     dcw.svc_groups: web-apps,full
-    kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+    kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
     kompose.version: 1.30.0 (HEAD)
-    service.beta.kubernetes.io/azure-load-balancer-internal: 'true'
   creationTimestamp: null
   labels:
     io.kompose.service: web-app-server
@@ -57,7 +55,7 @@ metadata:
     dcw.kompose.namespace: checker
     dcw.kompose.service.loadbalancerip: 10.10.10.10
     dcw.svc_groups: web-apps,full
-    kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+    kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
     kompose.version: 1.30.0 (HEAD)
   creationTimestamp: null
   labels:
@@ -76,11 +74,11 @@ spec:
         dcw.kompose.namespace: checker
         dcw.kompose.service.loadbalancerip: 10.10.10.10
         dcw.svc_groups: web-apps,full
-        kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+        kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
         kompose.version: 1.30.0 (HEAD)
       creationTimestamp: null
       labels:
-        io.kompose.network/dcw-check-net: 'true'
+        io.kompose.network/k8s-checker-check-net: 'true'
         io.kompose.service: web-app-client
     spec:
       containers:
@@ -99,10 +97,6 @@ spec:
           hostPort: 8080
           protocol: TCP
         resources: {}
-      hostAliases:
-      - hostnames:
-        - randomhost
-        ip: 10.10.22.22
       restartPolicy: Always
 status: {}
 ---
@@ -113,7 +107,7 @@ metadata:
     dcw.kompose.namespace: checker
     dcw.kompose.service.loadbalancerip: 10.10.10.10
     dcw.svc_groups: web-apps,full
-    kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+    kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
     kompose.version: 1.30.0 (HEAD)
   creationTimestamp: null
   labels:
@@ -132,11 +126,11 @@ spec:
         dcw.kompose.namespace: checker
         dcw.kompose.service.loadbalancerip: 10.10.10.10
         dcw.svc_groups: web-apps,full
-        kompose.cmd: kompose convert -f default.yml.tmp.yml --stdout
+        kompose.cmd: kompose convert -f hacking/k8s-checker/web-apps.yml.tmp.yml --stdout
         kompose.version: 1.30.0 (HEAD)
       creationTimestamp: null
       labels:
-        io.kompose.network/dcw-check-net: 'true'
+        io.kompose.network/k8s-checker-check-net: 'true'
         io.kompose.service: web-app-server
     spec:
       containers:

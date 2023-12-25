@@ -6,6 +6,9 @@ import itertools
 
 import prettytable
 
+def str_to_bool(val: str) -> bool:
+    return val.title() == 'True'
+
 def template_env_vars(text: str):
     placeholders = re.findall(r'[^$]\$\{([^}]*)\}', text)
     return list(set(placeholders))

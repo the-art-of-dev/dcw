@@ -19,16 +19,19 @@ class DCWDeploymentSpecification:
     def __init__(self,
                  name: str,
                  services: dict[str, dict],
-                 env: dict) -> None:
+                 env: dict,
+                 tasks: [] ) -> None:
         self.name = name
         self.services = services
         self.environment = env
+        self.tasks = tasks
 
     def as_dict(self):
         return {
             'name': self.name,
             'services': self.services,
-            'environment': self.environment
+            'environment': self.environment,
+            'tasks': self.tasks
         }
 
     @classmethod
@@ -37,6 +40,7 @@ class DCWDeploymentSpecification:
             cfg_dict['name'],
             cfg_dict['services'],
             cfg_dict['environment'],
+            cfg_dict['tasks']
         )
 
 
@@ -44,6 +48,7 @@ def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> 
     environment: DCWEnv = dcw_ctx.environments[env_name]
     depl_specs = []
     default_spec_svcs = {}
+    tasks = [t for t in environment.tasks]
 
     for svc_name in environment.services:
         if svc_name not in dcw_ctx.services:
@@ -51,6 +56,7 @@ def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> 
         svc = dcw_ctx.services[svc_name]
         default_spec_svcs[svc_name] = environment.apply_on_service(
             svc).as_dict()
+        tasks.extend([t for t in svc.tasks])
 
     for group_name in environment.svc_groups:
         svcs = filter(lambda s: group_name in s.groups, [
@@ -58,9 +64,11 @@ def __make_full_deplyoment_specification(env_name: str, dcw_ctx: DCWContext) -> 
         for s in svcs:
             default_spec_svcs[s.name] = environment.apply_on_service(
                 s).as_dict()
-
+            tasks.extend([t for t in s.tasks])
+            
+            
     depl_specs.append(DCWDeploymentSpecification(
-        'default', default_spec_svcs, environment.as_dict()))
+        'default', default_spec_svcs, environment.as_dict(), tasks))
 
     return depl_specs
 

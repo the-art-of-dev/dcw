@@ -8,13 +8,15 @@ from dataclasses import dataclass
 from ast import literal_eval as make_tuple
 import copy
 
+
 class DCWServiceMagicLabels(str, enum.Enum):
     GROUPS = 'dcw.svc_groups'
+    TASK_SELECTOR = 'dcw.task.'
 
 
 class DCWService:
     """DCW Service represents a docker service defined in a docker-compose.yml file"""
-    
+
     def __init__(self,
                  name: str,
                  config: dict = None) -> None:
@@ -26,7 +28,8 @@ class DCWService:
         self.labels = {}
         self.networks = []
         self.volumes = []
-        self.extra_hosts = [] # extra_host == (HOST,IP)
+        self.extra_hosts = []  # extra_host == (HOST,IP)
+        self.tasks = []
         self.config = config if config is not None else {}
         self.__set_from_config()
 
@@ -77,7 +80,7 @@ class DCWService:
         if DCWServiceMagicLabels.GROUPS in self.labels:
             self.groups = [
                 g.strip() for g in self.labels[DCWServiceMagicLabels.GROUPS].split(',')]
-            
+
     def __set_extra_hosts_from_config(self):
         if 'extra_hosts' in self.config and isinstance(self.config['extra_hosts'], list):
             for eh in self.config['extra_hosts']:
@@ -91,7 +94,38 @@ class DCWService:
                 self.extra_hosts.append(new_eh)
         else:
             self.config['extra_hosts'] = [f'{eh[0]}={eh[1]}' for eh in self.extra_hosts]
-            
+
+    def __set_tasks_from_labels(self):
+        for lbl in self.labels:
+            if not lbl.startswith(DCWServiceMagicLabels.TASK_SELECTOR):
+                continue
+
+            task_sel = lbl[len(DCWServiceMagicLabels.TASK_SELECTOR):]
+            prop_sel = task_sel
+
+            if task_sel.startswith('['):
+                prop_sel = task_sel[task_sel.index('].')+2:]
+                task_sel = task_sel[1:task_sel.index(']')]
+            else:
+                task_sel = task_sel.split('.')[0]
+                prop_sel = lbl[len(DCWServiceMagicLabels.TASK_SELECTOR + task_sel + '.'):]
+
+            dcw_task = None
+            existing = list(filter(lambda t: t['name'] == task_sel, self.tasks))
+            if len(existing) > 0:
+                dcw_task = existing[0]
+
+            if dcw_task is None:
+                dcw_task = {
+                    'name': task_sel,
+                    'mode': 'SERVICE',
+                    'args': {}
+                }
+                self.tasks.append(dcw_task)
+
+            selector_value = {prop_sel: self.labels[lbl]}
+            dcw_task['args'] = deep_update(
+                dcw_task['args'], selector_value)
 
     def __set_from_config(self):
         self.__set_image_from_config()
@@ -102,6 +136,7 @@ class DCWService:
         self.__set_volumes_from_config()
         self.__set_groups_from_label()
         self.__set_extra_hosts_from_config()
+        self.__set_tasks_from_labels()
 
     def __str__(self) -> str:
         return yaml.safe_dump(self.as_dict())

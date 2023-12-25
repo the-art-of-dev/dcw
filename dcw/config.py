@@ -15,6 +15,7 @@ class DCWConfigMagic(str, enum.Enum):
     DCW_DEPL_CONFIGS_PATH = 'DCW_DEPL_CONFIGS_PATH'
     DCW_VAULT_PATH = 'DCW_VAULT_PATH'
     DCW_TASKS_PATH = 'DCW_TASKS_PATH'
+    DCW_TASKS_MODULE = 'DCW_TASKS_MODULE'
     DCW_TENANT = 'DCW_TENANT'
     DCW_TENANT_DEPL_ROOT = 'DCW_TENANT_DEPL_ROOT'
 
@@ -28,10 +29,12 @@ class DCWConfig:
             DCWConfigMagic.DCW_UNITS_PATH: 'dcw-units',
             DCWConfigMagic.DCW_TMPLS_PATH: 'dcw-tmpls',
             DCWConfigMagic.DCW_DEPLS_PATH: 'dcw-depls',
+            DCWConfigMagic.DCW_TASKS_PATH: '',
+            DCWConfigMagic.DCW_TASKS_MODULE: 'dcw-tasks',
             DCWConfigMagic.DCW_DEPL_CONFIGS_PATH: 'depl-configs',
             DCWConfigMagic.DCW_VAULT_PATH: 'dcw-vault',
             DCWConfigMagic.DCW_TENANT: 'local',
-            DCWConfigMagic.DCW_TENANT_DEPL_ROOT: 'tenants'
+            DCWConfigMagic.DCW_TENANT_DEPL_ROOT: 'tenants',
         }
         if config is not None:
             self.__apply_config(config)

@@ -12,9 +12,11 @@ from dcw.service import DCWService
 class DCWEnvMagicSettingType(str, enum.Enum):
     SERVICE_GROUPS = 'dcw.service_groups'
     SERVICES = 'dcw.services'
+    IMPORT_ENV = 'dcw.import_environment'
     DEPLOYMENT_TYPE = 'dcw.deployment_type'
     SERVICE_SELECTOR = 'dcw.svc.'
     SERVICE_GROUP_SELECTOR = 'dcw.svc_group.'
+    TASK_SELECTOR = 'dcw.task.'
 
 
 class DCWEnvMagicSettingsPropertySelectorType(str, enum.Enum):
@@ -37,6 +39,7 @@ class DCWEnv:
         self.global_envs = {}
         self.service_configs: dict[str, dict] = {}
         self.svc_group_configs: dict[str, dict] = {}
+        self.tasks: [dict] = []
         self.__env_vars = env_vars
 
         for k, v in self.__env_vars.items():
@@ -50,22 +53,26 @@ class DCWEnv:
 
     def __selector_from_magic_env_name(self, env_name: str) -> str:
         env_type = self.__type_from_magic_env_name(env_name)
-        if env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
+        if env_type in (DCWEnvMagicSettingType.SERVICE_SELECTOR,
+                        DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR,
+                        DCWEnvMagicSettingType.TASK_SELECTOR):
+            selector = env_name[len(env_type.value):]
+            if selector.startswith('['):
+                return selector[1:selector.index(']')]
             return env_name[len(env_type.value):].split('.')[0]
-        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR:
-            return env_name[len(env_type.value):].split('.')[0]
-        else:
-            return None
+        return None
 
     def __prop_selector_from_magic_env_name(self, env_name: str):
         env_type = self.__type_from_magic_env_name(env_name)
         prop_selector = None
-        if env_type == DCWEnvMagicSettingType.SERVICE_SELECTOR:
+        if env_type in (DCWEnvMagicSettingType.SERVICE_SELECTOR,
+                        DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR,
+                        DCWEnvMagicSettingType.TASK_SELECTOR):
             selector = self.__selector_from_magic_env_name(env_name)
-            prop_selector = env_name[len(f'{env_type.value}{selector}.'):]
-        elif env_type == DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR:
-            selector = self.__selector_from_magic_env_name(env_name)
-            prop_selector = env_name[len(f'{env_type.value}{selector}.'):]
+            prop_selector = env_name[len(f'{env_type.value}'):]
+            if prop_selector.startswith('['):
+                return prop_selector[len(f'[{selector}].'):]
+            return prop_selector[len(f'{selector}.'):]
 
         if prop_selector.endswith('[]'):
             prop_selector = prop_selector[:-2]
@@ -124,6 +131,25 @@ class DCWEnv:
             selector_value = self.__selector_value_dict(env_name, env_value)
             self.svc_group_configs[selector] = deep_update(
                 self.svc_group_configs[selector], selector_value)
+        elif env_type == DCWEnvMagicSettingType.TASK_SELECTOR:
+            selector = self.__selector_from_magic_env_name(env_name)
+
+            dcw_task = None
+            existing = list(filter(lambda t: t['name'] == selector, self.tasks))
+            if len(existing) > 0:
+                dcw_task = existing[0]
+
+            if dcw_task is None:
+                dcw_task = {
+                    'name': selector,
+                    'mode': 'ENVIRONMENT',
+                    'args': {}
+                }
+                self.tasks.append(dcw_task)
+
+            selector_value = self.__selector_value_dict(env_name, env_value)
+            dcw_task['args'] = deep_update(
+                dcw_task['args'], selector_value)
 
     def get_env(self, env_name: str):
         return self.__env_vars[env_name]
@@ -147,31 +173,36 @@ class DCWEnv:
         }
 
         if self.services:
-            result[f'{DCWEnvMagicSettingType.SERVICES}'] = ','.join(
+            result[f'{DCWEnvMagicSettingType.SERVICES.value}'] = ','.join(
                 self.services)
         if self.svc_groups:
-            result[f'{DCWEnvMagicSettingType.SERVICE_GROUPS}'] = ','.join(
+            result[f'{DCWEnvMagicSettingType.SERVICE_GROUPS.value}'] = ','.join(
                 self.svc_groups)
 
-        for svc_name in self.service_configs:
-            flattened = flatten_dict(self.service_configs[svc_name])
-            for prop in flattened:
-                prop_value = flattened[prop]
-                result_key = f'{DCWEnvMagicSettingType.SERVICE_SELECTOR}{svc_name}.{prop}'
-                if isinstance(prop_value, list):
-                    prop_value = '.'.join(prop_value)
-                    result_key += '[]'
-                result[result_key] = prop_value
+        # if self.tasks:
+        #     for t in self.tasks:
+        #         for tp in t['args']:
+        #             result[f'{DCWEnvMagicSettingType.TASK_SELECTOR.value}[{t["name"]}].[{tp}]'] = t['args'][tp]
 
-        for svc_group_name in self.svc_group_configs:
-            flattened = flatten_dict(self.svc_group_configs[svc_group_name])
-            for prop in flattened:
-                prop_value = flattened[prop]
-                result_key = f'{DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR}{svc_group_name}.{prop}'
-                if isinstance(prop_value, list):
-                    prop_value = '.'.join(prop_value)
-                    result_key += '[]'
-                result[result_key] = prop_value
+        # for svc_name in self.service_configs:
+        #     flattened = flatten_dict(self.service_configs[svc_name])
+        #     for prop in flattened:
+        #         prop_value = flattened[prop]
+        #         result_key = f'{DCWEnvMagicSettingType.SERVICE_SELECTOR.value}{svc_name}.{prop}'
+        #         if isinstance(prop_value, list):
+        #             prop_value = '.'.join(prop_value)
+        #             result_key += '[]'
+        #         result[result_key] = prop_value
+
+        # for svc_group_name in self.svc_group_configs:
+        #     flattened = flatten_dict(self.svc_group_configs[svc_group_name])
+        #     for prop in flattened:
+        #         prop_value = flattened[prop]
+        #         result_key = f'{DCWEnvMagicSettingType.SERVICE_GROUP_SELECTOR.value}{svc_group_name}.{prop}'
+        #         if isinstance(prop_value, list):
+        #             prop_value = '.'.join(prop_value)
+        #             result_key += '[]'
+        #         result[result_key] = prop_value
 
         return result
 

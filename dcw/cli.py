@@ -4,6 +4,7 @@ import click
 from pprint import pprint as pp
 from dcw.logger import logger as lgg
 from dcw.context import DCWContext, import_dcw_context
+from dcw.config import DCWConfigMagic
 from dcw.service import map_service_groups
 from dcw.environment import DCWEnvMagicSettingType, list_global_environment_variables, list_all_environment_services
 from dcw.deployment import DCWDeploymentSpecificationType
@@ -12,6 +13,7 @@ from dcw.deployment import export_deployment_spec
 from dcw.deployment import DCWDeploymentMaker
 from dcw.std import DockerComposeDeploymentMaker, K8SDeploymentMaker
 from dcw.utils import table_print_columns
+from dcw.tasks import make_task_coll_from_depl_spec, DCWTaskCollection
 import sys
 
 
@@ -258,6 +260,37 @@ def depl_app_make(env_name: str, spec_type: str, depl_type: str, out: str):
         else:
             DCWDeploymentMaker.make_deployment(
                 depl_type, s, os.path.join(out, f'{s.name}.yml'))
+
+# ------ TASKS ------
+            
+@click.group('tasks')
+def tasks_app():
+    pass
+
+app.add_command(tasks_app)
+
+@tasks_app.command('list')
+@click.argument('env_name', nargs=1)
+@cli_error_handler
+def tasks_app_list(env_name: str):
+    spec = make_deployment_specifications(env_name, DCWDeploymentSpecificationType.FULL, DCWContext())
+    table_print_columns([
+        ('#', [i+1 for i in range(len(spec[0].tasks))]),
+        ('NAME', [t['name'] for t in spec[0].tasks])
+    ])
+
+
+# ------ X ------
+
+@app.command('x')
+@click.argument('env_name', nargs=1)
+@click.argument('task_name', nargs=1)
+@click.argument('task_mode', nargs=1)
+def app_x(env_name: str, task_name: str, task_mode: str):
+    ctx = DCWContext()
+    spec = make_deployment_specifications(env_name, DCWDeploymentSpecificationType.FULL, ctx)
+    task_coll: DCWTaskCollection = make_task_coll_from_depl_spec(spec[0], ctx.config[DCWConfigMagic.DCW_TASKS_PATH], ctx.config[DCWConfigMagic.DCW_TASKS_MODULE])
+    task_coll.run_task(task_name, task_mode)
 
 
 # @env_app.command("encrypt")

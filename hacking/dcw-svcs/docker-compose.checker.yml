@@ -15,6 +15,10 @@ services:
         labels:
             - dcw.svc_groups=web-apps,full
             - dcw.kompose.service.loadbalancerip=10.10.10.11
+            - dcw.task.[tasks.hello].name=poyy
+            - dcw.task.[tasks.hello].name.__chainable=
+        extra_hosts:
+          - randomhost:10.10.22.22
 
     web-app-server: #web-app*
         image: web-app-server
@@ -28,6 +32,8 @@ services:
             - check-net
         labels:
             - dcw.svc_groups=web-apps,full
+            - dcw.task.[tasks.hello].name=yo
+            - dcw.task.[tasks.hello].name.__chainable=
 
     web-client: #web*client
         image: web-client:latest

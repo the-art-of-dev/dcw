@@ -12,3 +12,6 @@ GitPython
 docker
 cryptography
 docker-compose-diagram
+fabric
+invoke
+radon
