@@ -1,90 +1,97 @@
 # pylint: skip-file
-import collections
+
+import argparse
+import itertools
 import re
 import string
-import itertools
+from typing import Callable, List
+from functools import reduce
 
-import prettytable
 
-def str_to_bool(val: str) -> bool:
-    return val.title() == 'True'
+def value_map_dict(ktype: Callable, vtype: Callable):
+    def map_val(d: dict):
+        if not isinstance(d, dict):
+            return d
+        return {ktype(k): vtype(**v) for k, v in d.items()}
+    return map_val
 
-def template_env_vars(text: str):
-    placeholders = re.findall(r'[^$]\$\{([^}]*)\}', text)
-    return list(set(placeholders))
 
-def render_template(text:str, env_vars: dict):
-    template = string.Template(text)
-    return template.safe_substitute(env_vars)
+def value_map_list(vtype: Callable):
+    def map_val(d: list):
+        if not isinstance(d, list):
+            return d
+        return [vtype(**x) if isinstance(x, dict) else vtype(x) for x in d]
+    return map_val
 
-def is_tool(name):
-    """Check whether `name` is on PATH and marked as executable."""
 
-    from shutil import which
+def value_map_dataclass(dctype: Callable):
+    def map_val(any):
+        if not isinstance(any, dict):
+            return dctype(any)
+        return dctype(**any)
+    return map_val
 
-    return which(name) is not None
+
+def default_val(val):
+    def check_val(any):
+        if any == None:
+            return val
+        return any
+    return check_val
+
+
+def raise_if(ex, vm_f: Callable, val=None):
+    def check_val(any):
+        if any == val:
+            raise ex
+        return vm_f(any)
+    return check_val
+
+
+def missing_args(args: dict, arg_names: List[str]) -> List[str]:
+    return list(filter(lambda an: an not in args or args[an] == Ellipsis, arg_names))
+
+
+def check_for_missing_args(args: dict, arg_names: List[str]):
+    missing = missing_args(args, arg_names)
+    if missing != []:
+        raise Exception(f'Missing arguments {missing}.')
 
 
 def flatten(list_of_lists):
     return list(itertools.chain.from_iterable(list_of_lists))
 
 
-def flatten_dict(dd: dict, separator='_', prefix='') -> dict:
-    res = {}
-    for key, value in dd.items():
-        if isinstance(value, dict):
-            res.update(flatten_dict(
-                value, separator, prefix + key + separator))
-        else:
-            res[prefix + key] = value
-    return res
+def flat_map(f, xs): return reduce(lambda a, b: a + b, map(f, xs))
 
 
-def dot_env_to_dict(env_name: str, env_val=None, last_flat_key: str = None) -> dict:
-    keys = env_name.split('.')
-    stack = []
-    current_dict = {}
-
-    if len(keys) == 1:
-        return {keys[0]: env_val}
-
-    for key in keys:
-        if not stack:
-            current_dict[key] = None
-            stack.append(current_dict)
-        elif len(stack) == len(keys):
-            if last_flat_key is not None:
-                stack[-1][key][last_flat_key] = env_val
-            else:
-                stack[-1][key] = env_val
-        else:
-            new_dict = {}
-            current_dict[key] = new_dict
-            stack.append(new_dict)
-            current_dict = new_dict
-    return stack[0]
+def str_to_bool(val: str) -> bool:
+    return val.title() == 'True'
 
 
-def dot_env_to_dict_rec(env_name, env_val, last_flat_key=None):
-    sep = '.'
-    if sep not in env_name:
-        if last_flat_key:
-            return {env_name: {last_flat_key: env_val}}
-        return {env_name: env_val}
-    key, val = env_name.split(sep, 1)
-    return {key: dot_env_to_dict_rec(val, env_val, last_flat_key)}
+def template_vars(text: str):
+    placeholders = re.findall(r'\$\{([^}]*)\}', text)
+    return list(set(placeholders))
 
 
-def deep_update(d, u):
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = deep_update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
+def render_template(text: str, data: dict):
+    tvars = template_vars(text)
+    for tv in tvars:
+        text = text.replace('${' + tv + '}', data.get(tv, '${' + tv + '}'))
+    return text
 
-def table_print_columns(data_columns: [(str, [str])]):
-    tbl = prettytable.PrettyTable()
-    for (title, items) in data_columns:
-        tbl.add_column(title, items)
-    print(tbl)
+    # template = string.Template(text)
+    # return template.safe_substitute(data)
+
+
+def is_false(any):
+    return any in [None, ..., '', False, 'False', 'false']
+
+
+class StoreDictKeyPair(argparse.Action):
+     def __call__(self, parser, namespace, values, option_string=None):
+         my_dict = {}
+         for kv in values.split(","):
+             k,v = kv.split("=")
+             my_dict[k] = v
+         setattr(namespace, self.dest, my_dict)

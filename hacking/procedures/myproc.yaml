@@ -1,0 +1,31 @@
+- module: proj
+  cmd: load
+  desc: Load project
+- desc: Proc in proc
+  is_active: dcw.proj.cfg.notfound
+  tasks:
+      - module: proj
+        cmd: list
+        desc: Print proj
+      - module: scripts
+        cmd: load
+        desc: Load scripts
+      - module: scripts
+        cmd: list
+        desc: Print scripts
+- desc: list tasks
+  module: task_c
+  cmd: list
+- desc: run task from collection
+  module: task_c
+  cmd: run_task
+  args:
+    name: hello
+    args:
+      name: yoyo
+# - desc: run dcw task
+#   module: tasks
+#   cmd: x
+#   args:
+#     name: hello
+

@@ -1,0 +1,14 @@
+- desc: say hello
+  module: task_c
+  cmd: run_task
+  args:
+    name: hello
+    args:
+      name: GIGA MORAVAC
+
+- desc: zbdzbdzbd
+  module: procs
+  is_active: dcw.procs.myproc
+  cmd: run
+  args:
+    name: myproc

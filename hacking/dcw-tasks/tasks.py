@@ -1,7 +1,8 @@
 from invoke.tasks import task
 from invoke.context import Context
+from dcw.stdmods.task_collections import dcw_task
 
-@task
+@dcw_task
 def test(ctx):
     print('Poyy')
     ctx.run('docker ps')

@@ -1,0 +1,14 @@
+click
+colorlog
+PyYAML
+python-dotenv
+prompt_toolkit
+prettytable
+autopep8
+pylint
+pytest
+pytest-cov
+GitPython
+docker
+cryptography
+invoke

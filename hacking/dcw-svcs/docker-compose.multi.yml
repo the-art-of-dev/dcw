@@ -1,12 +1,22 @@
 ---
 services:
     web-app:
-        image: nginx:latest
+        image: test-app:1.1.1
         ports:
             - 8080:80
         networks:
             - web-network
+        labels:
+            - dcw.builder.type=docker
+            - dcw.builder.cfg.path=./hacking/test-app
+            - dcw.builder.environment.DOCKER_HOST=unix:///Users/buaa/.docker/run/docker.sock
 
+    steker-app:
+        image: steker:latest
+        labels:
+            # - dcw.groups.<0>=gone
+            # - dcw.groups.<1>=gtwo
+            - dcw.groups@=gone,gtwo
 networks:
     web-network:
 ---

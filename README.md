@@ -1,94 +1,86 @@
-# DCW - Deployment Configuration Wrapper | Docker Compose Wrapper
+# DCW (Development Configuration Wrapper)
 
-## Table of content
+_DCW is a wish for DCW to become a wrapper around development tooling_
 
-## Purpose
+## Table of contents
 
-Manage deployment configuration for simple and semi-complex deployment environments using docker compose files in yaml
-format, resulting in a deployment configuration specific to the deployment environment.
+- [DCW (Development Configuration Wrapper)](#dcw-development-configuration-wrapper)
+  - [Table of contents](#table-of-contents)
+  - [Core](#core)
+    - [Context](#context)
+    - [Envy](#envy)
+    - [State](#state)
+    - [Modules](#modules)
+    - [Commands](#commands)
+  - [Standard dcw library](#standard-dcw-library)
+  - [Cli](#cli)
+  - [Feature List](#feature-list)
+  - [Development](#development)
 
-## Installation
+## Core
 
-Requirements:
+DCW is modular system for wrapping development tools. It comes with standard library of modules.
 
-- Python3 (>=3.7)
-- docker-compose
-- kompose
+<img src="./docs/imgs/dcw-arch.png" width="800px">
 
-```sh
-pip3 install "git+https://github.com/the-art-of-dev/dcw.git#egg=dcw"
-```
+Dcw core is composed of:
 
-## Boundaries
+-   Envy
+-   Context
+-   State
+-   Modules
 
-- Use docker compose yaml files to describe services you need
+### Context
 
-- Use simple text files to describe the deployment units with the services that should be deployed in them
+Dcw context holds state of the dcw application, loads and stores all dcw modules and allows running dcw module commands. 
 
-- Use simple text files to describe environment variables used for templating the docker compose files
+It can be viewd as one dcw application context.
 
-- Use simple text files to describe tenants to reuse the same deployment configuration in multiple product customizations
+### Envy
 
-- Use text templates to standardize the process of creating the same type of services, environments, and units
+Envy is simple scripting command language to update nested data.
 
-- Use encrypted files to store sensitive information
+Envy consists of envy commands and envy operations that handles those commands.
 
-## Terminology
+This is an atempt to describe it:
 
-This tool allows you to create clear interfaces toward development team. It's not intended to hide complexity of how
-deployment/execution environments work but to create clear interface between members of the development team.
+-   Envy command is any valid unix environment variable `env_name=env_value`. This can be any pair of strings `(str, str)` that represents env name and value
+-   `env_value` - is a string value processed by envy operation
+-   `env_name` is interpreted in the following way (regex operations used: `(),|,*`)
+    -   expression: `([SEL] | SEL)(.[SEL] | .SEL)*(OP)`
+    -   tokens:
+        -   `OP` - specifies operation that's used for interpretating and processing the `env_value` and the `selector` in nested object context
+        -   `.` - nested object field accessor
+        -   `SEL` - simple selector that represents field name without special characters (not wrapped by `[` and `]`)
+        -   `[` and `]` - flat selector that allows using `.` in the field name and regulary enclosed `[` and `]`
 
-### Service
+In the explanation picture below we have one nested JSON object with one field. Bellow we see the envy script command that represents the JSON object above, also we can see JSON representation of the envy command.
 
-- A service is an application that is deployed in a unit
-- A service is described in a docker compose file
-- A service can be deployed in multiple units
-- A service can be deployed in multiple environments
-- A service uses environment variables to configure it's deployment
-- A service can be deployed in multiple versions
+<img src="./docs/imgs/envy.png" width="600px">
 
-### Unit
+> Envy implementation in this project has a few enhancements like setting the optional command prefix. See [envy.py](./dcw/envy.py)
 
-- A unit is a deployment unit that is deployed in an environment
-- A unit is described in a simple text file
-- A unit contains a list of services that should be deployed in it
-- A unit can be deployed in multiple environments
+### State
 
-### Environment
+Dcw state is updated after every run of dcw commands.
 
-- An environment is a list of environment variables that are used to configure the deployment of units
-- An environment is described in a simple text file
-- An environment contains a list of environment variables
+DCW state is composed of:
 
-### Template
+-   `envy_log` - Envy Command Log typed `List[EnvyCmd]`
+-   `data` - Nested object typed `dict`
 
-- A template is a text file that is used to create other text files
-- A template can be used to create services
-- A template can be used to create units
-- A template can be used to create environments
+After every successfull command run retreived command log is applied to `data` and appended to `envy_log`
 
-### Tenant
+### Modules
 
-- A tenant is a group of unit and environment pairs
-- A tenant is described in a text file
+Modules are plug and pray system for dcw. They are defined as object
 
-## Supported deployment platforms
+### Commands
 
-- Docker compose like (docker-compose)
-- Kubernetes like (kubectl)
+## Standard dcw library
 
+## Cli
+
+## Feature List
 
 ## Development
-
-SETUP
-```bash
-python3 -m venv .
-source bin/activate # or source Scripts/activate
-export PYTHONPATH="$(pwd)"
-pip install -r requirements.txt
-```
-
-RUN
-```bash
-python dcw/cli.py
-```

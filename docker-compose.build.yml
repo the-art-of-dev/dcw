@@ -1,0 +1,31 @@
+networks:
+    test-net: {}
+    web-network: {}
+services:
+    web:
+        extra_hosts: []
+        image: nginx:1.17.8-alpine
+        labels:
+            best: "1312"
+            multi: "187"
+            test: "123"
+        networks:
+            - test-net
+        ports:
+            - 5555:80
+        volumes: []
+    web-app:
+        extra_hosts: []
+        image: test-app:1.1.1
+        labels:
+            dcw.builder.cfg.path: ./hacking/test-app
+            dcw.builder.environment.DOCKER_HOST: unix:///Users/buaa/.docker/run/docker.sock
+            dcw.builder.type: docker
+            multi: "187"
+            test111: 1xxxx1
+        networks:
+            - web-network
+        ports:
+            - 8080:80
+        volumes: []
+volumes: {}

@@ -1,0 +1,35 @@
+name: dcw
+root: ./hacking
+cfg:
+    svcs_root: "dcw-svcs"
+    scripts_root: "dcw-envs"
+    allowed_scripts: ["envy", "env"]
+    procs_root: "procedures"
+    depls_root: dcw-depls
+    task_c:
+        - tasks_root: "dcw-tasks"
+          tasks_module: "tasks"
+    tasks:
+        hello:
+            name: yoyo1312
+    scm_root: "repos"
+    scm:
+        dcw:
+            type: git
+            url: https://github.com/the-art-of-dev/dcw
+            version: main
+    jenkins:
+        url: http://localhost:8080
+        username: buaa
+        password: 1115f657dd79a7ab8ca5f2fb706899adb5
+    depls:
+        build:
+            services:
+                - web
+                - web-app
+            envs:
+                - base
+                - build
+            url: docker-compose.build.yml
+            type: docker-compose
+    notfound: False

@@ -1,26 +1,29 @@
 # pylint: skip-file
 from os import PathLike
 from typing import Any, Dict, Optional
-from dcw.environment import import_env_from_file
+# from dcw.environment import import_env_from_file
 from pprint import pprint as pp
-from dcw.service import import_services_from_file
-from dcw.deployment import make_deployment_specifications, DCWDeploymentMaker, import_deployment_maker_from_file
-from dcw.std import DockerComposeDeploymentMaker, K8SDeploymentMaker
-from dcw.context import DCWContext
+# from dcw.service import import_services_from_file
+# from dcw.deployment import make_deployment_specifications, DCWDeploymentMaker, import_deployment_maker_from_file
+# from dcw.std import DockerComposeDeploymentMaker, K8SDeploymentMaker
+# from dcw.context import DCWContext
 import docker_compose_diagram
 from docker_compose_diagram.di_container.facade import docker_compose_parser, plugins
 from docker_compose_diagram.renderer.base import Renderer
 from docker_compose_diagram.renderer.diagrams import DiagramsRenderer
-from dcw.tasks import DCWTask, DCWTaskCollection, DCWTaskSpec, asdict
+# from dcw.tasks import DCWTask, DCWTaskCollection, DCWTaskSpec, asdict
+from invoke.program import Program, Collection
+# from dcw.api import DockerComposeServiceSpec
 
-env = import_env_from_file('./hacking/dcw-envs/.checker.env')
+
+# env = import_env_from_file('./hacking/dcw-envs/.checker.env')
 # pp(env.global_envs)
 # pp(env.service_configs)
 # pp(env.svc_group_configs)
 # pp(env.as_dict())
 
-svcs = import_services_from_file(
-    './hacking/dcw-svcs/docker-compose.checker.yml')
+# svcs = import_services_from_file(
+#     './hacking/dcw-svcs/docker-compose.checker.yml')
 
 # for svc in svcs:
 #   new_svc = env.apply_on_service(svcs[svc])
@@ -29,10 +32,10 @@ svcs = import_services_from_file(
 #   pp(new_svc.config)
 #   print('-'*80)
 
-DockerComposeDeploymentMaker()
-K8SDeploymentMaker()
+# DockerComposeDeploymentMaker()
+# K8SDeploymentMaker()
 
-ctx = DCWContext(None, svcs, {env.name: env})
+# ctx = DCWContext(None, svcs, {env.name: env})
 # ctx2 = DCWContext()
 
 # pp(ctx.environments[env.name])
@@ -107,41 +110,76 @@ ctx = DCWContext(None, svcs, {env.name: env})
 
 # run_task(DCWTask('tasks.hello', 'SERVICE', {'name': 'yo'}))
 
-first_task = DCWTask(asdict(DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'true'})))
-second_task = DCWTask(asdict(DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy'})))
+# first_task = DCWTask(asdict(DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'true'})))
+# second_task = DCWTask(asdict(DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy'})))
 
-first_task.run('./hacking', 'dcw-tasks')
-second_task.run('./hacking', 'dcw-tasks')
+# first_task.run('./hacking', 'dcw-tasks')
+# second_task.run('./hacking', 'dcw-tasks')
 
-print('-'*20)
+# print('-'*20)
 
-coll = DCWTaskCollection([
-    DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'true'}),
-    DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy', '__merge_disabled': 'false'})
-], './hacking', 'dcw-tasks')
+# coll = DCWTaskCollection([
+#     DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'true'}),
+#     DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy', '__merge_disabled': 'false'})
+# ], './hacking', 'dcw-tasks')
 
-coll.run_task('tasks.hello', 'SERVICE')
+# coll.run_task('tasks.hello', 'SERVICE')
 
-print('-'*20)
+# print('-'*20)
 
-coll = DCWTaskCollection([
-    DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'false'}),
-    DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy', '__merge_disabled': 'false'})
-], './hacking', 'dcw-tasks')
+# coll = DCWTaskCollection([
+#     DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'yo', '__merge_disabled': 'false'}),
+#     DCWTaskSpec('tasks.hello', 'SERVICE', {'name': 'poyy', '__merge_disabled': 'false'})
+# ], './hacking', 'dcw-tasks')
 
-coll.run_task('tasks.hello', 'SERVICE')
+# coll.run_task('tasks.hello', 'SERVICE')
 
-print('-'*20)
+# print('-'*20)
 
 
 
-coll = DCWTaskCollection([
-    DCWTaskSpec(**{'args': {'name': 'poyy', 'name.__chainable': ''},
-            'mode': 'SERVICE',
-            'name': 'tasks.hello'}),
-    DCWTaskSpec(**{'args': {'name': 'yo', 'name.__chainable': ''},
-            'mode': 'SERVICE',
-            'name': 'tasks.hello'})
-], './hacking', 'dcw-tasks')
+# coll = DCWTaskCollection([
+#     DCWTaskSpec(**{'args': {'name': 'poyy', 'name.__chainable': ''},
+#             'mode': 'SERVICE',
+#             'name': 'tasks.hello'}),
+#     DCWTaskSpec(**{'args': {'name': 'yo', 'name.__chainable': ''},
+#             'mode': 'SERVICE',
+#             'name': 'tasks.hello'})
+# ], './hacking', 'dcw-tasks')
 
-coll.run_task('tasks.hello', 'SERVICE')
+# coll.run_task('tasks.hello', 'SERVICE')
+
+# from tester import tasks
+
+# inv_prg = Program()
+# inv_prg.create_config()
+# inv_prg.parse_core(['x', '--search-root', './hacking/dcw-tasks', '-c', 'tasks'])
+# inv_prg.parse_collection()
+# pairs = inv_prg._make_pairs(inv_prg.scoped_collection)
+
+# pp(pairs)
+# inv_prg = Program(namespace=Collection.from_module(tasks), version='0.1.0')
+# inv_prg.run(['x', '--search-root', './hacking', '-c', 'dcw-tasks', '-l'])
+
+
+# inv_prg.load_collection
+
+# c = DockerComposeServiceSpec('xx', **{
+#     'image': 'str',
+#     'ports': ['List[str]'],
+#     'environment': {'S':'SS'},
+#     'labels': {'S':'SS'},
+#     'networks': ['List[str]'],
+#     'volumes': ['List[str]'],
+#     'extra_hosts': ['List[str]1']
+# })
+
+# print(c.name)
+
+from dcw.api_spec import DcwServiceSpec
+from dataclasses import fields
+
+doc = fields(DcwServiceSpec(''))
+print(DcwServiceSpec.__doc__)
+for f in doc:
+    print(f'{f.name}: {f.__doc__}')

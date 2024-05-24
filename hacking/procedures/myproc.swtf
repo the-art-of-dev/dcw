@@ -1,0 +1,19 @@
+- global setup [global]
+    - [env: gen2-build]
+- build all artefacts from all repos
+    - git checkout gen2 [task: git-checkout][repo: gen2][branch: develop][path: ./repos/gen2]
+    - git checkout gen2-onbrd [task: git-checkout][repo: gen2-onbrd][branch: main][path: ./repos/gen2-onbrd]
+    - build temp backend gen2, gen2-onbrd, gen2-test [task: build-jib][mode: service][name: *][reg: weucrrepo][skipTests: false][version: ${build_number}]
+- run integration tests
+    - git checkout gen2-test [task: git-checkout][repo: gen2-test][branch: main][path: ./repos/gen2-test]
+    - make sure genesis2 is not running [task: down][mode: environment]
+    - run genesis2 in docker-compose env [task: up][mode: environment]
+    - run gen2-test [task: run-intg-tests]
+    - make sure genesis2 is not running [task: down][mode: environment]
+- version and publish
+    - git tag version [task: git-tag][repo: gen2][branch: develop][version: ${build_number}]
+    - git tag version [task: git-tag][repo: gen2-onbrd][branch: main][version: ${build_number}]
+    - tag image [task: oci-tag][reg: weucrrepo][version: ${build_number}]
+- deploy to needed envs (dev-be, dev-fe,...)
+    - make sure genesis2 is not running [task: down][mode: environment]
+    - run genesis2 in docker-compose env [task: up][mode: environment]
