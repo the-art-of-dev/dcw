@@ -104,7 +104,7 @@ def cmd_build(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     if builder_cfg is None:
         raise Exception(f'Build config for service {svc.name}, not found.')
 
-    return run(builder_cfg.type, 'build_svc', {**args, **builder_cfg.cfg})
+    return run(builder_cfg.type, 'build_svc', args)
 
 
 @dcw_cmd()
