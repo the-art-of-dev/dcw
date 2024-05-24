@@ -147,8 +147,8 @@ def cmd_stop_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
         args_str += f'{k}={args[k]}\n'
     args_state = EnvyState({}, envy_cfg) + str_to_envy(args_str, envy_cfg)
 
-    deployer_cfg.cfg['args'] = {
-        **deployer_cfg.cfg.get('args', {}),
+    deployer_cfg.cfg = {
+        **deployer_cfg.cfg,
         **args_state['']
     }
 
