@@ -11,8 +11,7 @@ from dcw.envy import EnvyCmd, apply_cmd_log, dict_to_envy, get_selector_val
 from dcw.stdmods.deployments import DcwDeployment
 from dcw.stdmods.services import DcwService
 from pprint import pprint as pp
-from dcw.utils import check_for_missing_args
-from old.dcw.utils import flatten
+from dcw.utils import check_for_missing_args, flatten
 
 # --------------------------------------
 #   Docker Compose
