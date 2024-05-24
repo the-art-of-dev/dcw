@@ -152,7 +152,7 @@ def cmd_stop_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
         **args_state['']
     }
 
-    return cmd_run_task(state.state, {**deployer_cfg.cfg, **args}, run)
+    return cmd_run_task(state.state, deployer_cfg.cfg, run)
 
 
 @dcw_cmd()
