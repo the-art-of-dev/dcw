@@ -39,13 +39,14 @@ def not_found_ex(name: str) -> Exception:
 
 
 def run_proc(s: dict, proc: DcwProcedure, run: Callable) -> List[EnvyCmd]:
-    lgg.info(f'Running - {proc.desc}')
     envy_cfg = dcw_envy_cfg()
     state = EnvyState(s, envy_cfg)
     out_ecl = []
 
     if is_false(state[proc.is_active]):
         return out_ecl
+
+    lgg.info(f'Running - {proc.desc}')
 
     if proc.module != '' and proc.cmd != '':
         diff_ecl = run(proc.module, proc.cmd, proc.args)
