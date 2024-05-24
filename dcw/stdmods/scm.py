@@ -1,12 +1,12 @@
 # pylint: skip-file
 from __future__ import annotations
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 import os
 from typing import Callable, List
 
 import yaml
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, get_selector_val, dict_to_envy, prepand_selector
+from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, get_selector_val, dict_to_envy
 from dcw.utils import check_for_missing_args, value_map_dict, value_map_dataclass as vm_dc, raise_if
 from pprint import pprint as pp
 from git import GitCommandError, InvalidGitRepositoryError, Repo

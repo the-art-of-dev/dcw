@@ -1,6 +1,5 @@
 # pylint: skip-file
 from __future__ import annotations
-from collections import namedtuple
 from dataclasses import asdict, dataclass, field
 import enum
 import os

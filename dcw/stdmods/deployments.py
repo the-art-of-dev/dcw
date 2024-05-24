@@ -1,15 +1,12 @@
 # pylint: skip-file
 from __future__ import annotations
 from dataclasses import asdict, dataclass, field
-from functools import reduce
-import os
 from typing import Callable, List
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, get_selector_val, dict_to_envy, is_envy_log, prepand_selector
-from dcw.utils import check_for_missing_args, value_map_dict, value_map_list, raise_if, value_map_dataclass as vm_dc
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy, is_envy_log, prepand_selector
+from dcw.utils import check_for_missing_args, value_map_list, raise_if, value_map_dataclass as vm_dc
 from dcw.stdmods.services import DcwService
-from dcw.stdmods.tasks import DcwTask
 from pprint import pprint as pp
 
 # --------------------------------------

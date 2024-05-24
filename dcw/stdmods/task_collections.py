@@ -5,12 +5,12 @@ import os
 from typing import Callable, List
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, dict_to_envy, get_selector_val
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy
 from pprint import pprint as pp
 from invoke.tasks import task
 from invoke.program import Program
 from dcw.stdmods.services import DcwService
-from dcw.utils import check_for_missing_args, is_false, value_map_dict, value_map_list, value_map_dataclass as vm_dc
+from dcw.utils import check_for_missing_args, is_false, value_map_list, value_map_dataclass as vm_dc
 
 # --------------------------------------
 #   Task Collections

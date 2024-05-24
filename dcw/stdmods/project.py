@@ -6,7 +6,7 @@ from typing import Callable, List
 
 import yaml
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, dict_to_envy, get_selector_val
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy
 from pprint import pprint as pp
 
 # --------------------------------------
