@@ -75,7 +75,7 @@ def cmd_run_task(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     task_colls: List[DcwTaskCollection] = state['task_c', value_map_list(DcwTaskCollection)]
 
-    tc = next(filter(lambda c: tname in c.task_names, task_colls))
+    tc = next(filter(lambda c: tname in c.task_names, task_colls), None)
     if tc is None:
         raise Exception(f'Task with name {tname} not found in loaded collections.')
 
