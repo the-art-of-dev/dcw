@@ -98,21 +98,21 @@ obj = {
 # pp(set_filter_selector_val(obj, ['svcs', 'svc-*', 'envi*', 'new_key'], 'yo'))
 
 
-@dataclass
-class MySvc:
-    image: str = ''
-    environment: dict = field(default_factory=dict)
-    envy: str = ''
-    labels: List[str] = field(default_factory=list)
+# @dataclass
+# class MySvc:
+#     image: str = ''
+#     environment: dict = field(default_factory=dict)
+#     envy: str = ''
+#     labels: List[str] = field(default_factory=list)
 
 
-envy_state = EnvyState(obj, dcw_envy_cfg()) + [EnvyCmd(['volumes', '<0>'],
-                                                       '', 'vol_one'), EnvyCmd(['volumes', '<1>'], '', 'vol_two')]
+# envy_state = EnvyState(obj, dcw_envy_cfg()) + [EnvyCmd(['volumes', '<0>'],
+#                                                        '', 'vol_one'), EnvyCmd(['volumes', '<1>'], '', 'vol_two')]
 
-envy_state['svcs.*.labels.mylbl'] = 'Yo'
-envy_state['svcs.svc-1.labels.mylbl'] = 'YoYo'
-# pp(envy_state['svcs.svc-1', value_map_dataclass(MySvc)])
-x = envy_state['volumes']
-pp(envy_state)
-pp(type(x))
-pp(x)
+# envy_state['svcs.*.labels.mylbl'] = 'Yo'
+# envy_state['svcs.svc-1.labels.mylbl'] = 'YoYo'
+# # pp(envy_state['svcs.svc-1', value_map_dataclass(MySvc)])
+# x = envy_state['volumes']
+# pp(envy_state)
+# pp(type(x))
+# pp(x)

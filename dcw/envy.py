@@ -109,7 +109,9 @@ def get_selector_val(state: dict, selector: List[str], map_val: Callable = None)
     ref = state
 
     for s in selector:
-        if isinstance(ref, dict) and ref.get(s) is not None:
+        if s == '<last>' and is_dict_list(s):
+            ref = ref.get(sorted(ref.keys()).pop())
+        elif isinstance(ref, dict) and ref.get(s) is not None:
             ref = ref.get(s)
         else:
             return None
@@ -146,14 +148,19 @@ def set_selector_val(state: dict, selector: List[str], val: Any) -> dict:
     for s in selector[:-1]:
         if not isinstance(ref, dict):
             ref = {}
-        if ref.get(s) is not None:
+        if s == '<last>' and is_dict_list(ref):
+            ref = ref.get(sorted(ref.keys()).pop())
+        elif ref.get(s) is not None:
             ref = ref.get(s)
         else:
             ref[s] = {}
             ref = ref.get(s)
-    ref[selector[-1]] = convert_to_dicts(val)
+    sel = selector[-1]
+    if selector[-1] == '<last>' and is_dict_list(ref):
+        sel = sorted(ref.keys()).pop()
+    ref[sel] = convert_to_dicts(val)
     if val is None:
-        del ref[selector[-1]]
+        del ref[sel]
     return state_c
 
 
@@ -297,6 +304,7 @@ def selector_to_str(selector: List[str], cfg: EnvyConfig) -> str:
         else:
             result.append(s)
     return '.'.join(result)
+
 
 def cmd_to_str(cmd: EnvyCmd, cfg: EnvyConfig) -> str:
     return selector_to_str(cmd.selector, cfg) + cmd.op + '=' + cmd.data
