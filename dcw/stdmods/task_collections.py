@@ -69,6 +69,7 @@ def run_inv_task(tasks_root: str, tasks_module: str, tname: str, args: dict):
 
 @dcw_cmd({'name': ..., 'args': {}})
 def cmd_run_task(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    pp(args)
     check_for_missing_args(args, ['name'])
     state = EnvyState(s, dcw_envy_cfg())
     state += run(NAME, 'load')
@@ -122,12 +123,12 @@ def cmd_start_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     deployer_cfg: DcwDeployerConfig = state[f'depls.{depl_name}.deployer', vm_dc(DcwDeployerConfig)]
 
-    deployer_cfg.cfg['args'] = {
-        **deployer_cfg.cfg.get('args', {}),
-        **args['args']
-    }
+    # deployer_cfg.start_cfg['args'] = {
+    #     **deployer_cfg.start_cfg.get('args', {}),
+    #     **args['args']
+    # }
 
-    return cmd_run_task(state.state, deployer_cfg.cfg, run)
+    return cmd_run_task(state.state, deployer_cfg.start_cfg, run)
 
 
 @dcw_cmd({'name': ..., 'args': {}})
@@ -142,17 +143,20 @@ def cmd_stop_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     deployer_cfg: DcwDeployerConfig = state[f'depls.{depl_name}.deployer', vm_dc(DcwDeployerConfig)]
 
-    args_str = ''
-    for k in args:
-        args_str += f'{k}={args[k]}\n'
-    args_state = EnvyState({}, envy_cfg) + str_to_envy(args_str, envy_cfg)
+    # args_str = ''
+    # for k in args['args']:
+    #     args_str += f'dcw.{k}={args["args"][k]}\n'
+        
+    # for k in args:
+    #     if k.startswith('args.'):
+    #         args_str += f'dcw.{k}={args[k]}\n'
+    # args_state = EnvyState({}, envy_cfg) + str_to_envy(args_str, envy_cfg)
+    # deployer_cfg.start_cfg = {
+    #     **deployer_cfg.start_cfg,
+    #     **args_state['']
+    # }
 
-    deployer_cfg.cfg = {
-        **deployer_cfg.cfg,
-        **args_state['']
-    }
-
-    return cmd_run_task(state.state, deployer_cfg.cfg, run)
+    return cmd_run_task(state.state, deployer_cfg.stop_cfg, run)
 
 
 @dcw_cmd()

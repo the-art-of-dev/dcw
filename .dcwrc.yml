@@ -33,10 +33,20 @@ cfg:
                 - build
             url: docker-compose.build.yml
             type: docker-compose
+            deployer:
+                type: task_c
+                start_cfg:
+                    name: dc-up
+                    args:
+                        filename: docker-compose.local.yml
+                stop_cfg:
+                    name: dc-down
+                    args:
+                        filename: docker-compose.local.yml
     notfound: False
     regs:
-      mydcr:
-        type: docker
-        url: http://examplereg
-        username: ${MYDCR_UNAME}
-        password: ${MYDCR_PASS}
+        mydcr:
+            type: docker
+            url: http://examplereg
+            username: ${MYDCR_UNAME}
+            password: ${MYDCR_PASS}

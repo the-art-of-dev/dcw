@@ -21,7 +21,8 @@ SELECTOR = selector = ['depls']
 @dataclass
 class DcwDeployerConfig:
     type: str
-    cfg: dict = field(default_factory=dict)
+    start_cfg: dict = field(default_factory=dict)
+    stop_cfg: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -229,7 +230,6 @@ def cmd_stop(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     if deployer is None:
         raise Exception(f'No deployer specified for deployment {depl_name}')
     return run(deployer.type, 'stop_depl', args)
-
 
 
 # endregion
