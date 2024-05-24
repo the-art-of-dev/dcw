@@ -97,8 +97,7 @@ def load_custom_mods() -> List[DcwModule]:
     for filename in os.listdir('modules'):
         if filename in ['.', '..'] or not filename.endswith('.py'):
             continue
-        mods.append(load_dcw_module('modules.'+filename.removesuffix('.py'),
-                                    os.path.abspath(os.path.join('modules', filename))))
+        mods.append(load_dcw_module(filename.removesuffix('.py'), ''))
     return mods
 
 
@@ -118,6 +117,8 @@ def app():
         jenkins_mod.name: jenkins_mod,
         regs_mod.name: regs_mod
     })
+
+    sys.path.append('modules')
 
     for cm in load_custom_mods():
         ctx.modules[cm.name] = cm
