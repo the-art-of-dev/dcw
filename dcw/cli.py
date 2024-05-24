@@ -95,9 +95,10 @@ def load_custom_mods() -> List[DcwModule]:
         return []
     mods = []
     for filename in os.listdir('modules'):
-        if filename.endswith('.py'):
-            mods.append(load_dcw_module('modules.'+filename.removesuffix('.py'),
-                        os.path.abspath(os.path.join('modules', filename))))
+        if filename in ['.', '..'] or not filename.endswith('.py'):
+            continue
+        mods.append(load_dcw_module('modules.'+filename.removesuffix('.py'),
+                                    os.path.abspath(os.path.join('modules', filename))))
     return mods
 
 
