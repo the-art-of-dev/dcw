@@ -71,6 +71,8 @@ def make_depl_svcs(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     for depl_svc_name in depl.services:
         svcs = state[f'svcs.{depl_svc_name}']
+        if svcs is None:
+            raise Exception(f'Services for {depl_svc_name} query not found in deployment {depl.name}.')
         if not isinstance(svcs, list):
             svcs = [svcs]
         else:
