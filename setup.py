@@ -1,3 +1,5 @@
-from setuptools import setup
+from setuptools import find_namespace_packages, setup
 
-setup()
+setup(
+    packages = find_namespace_packages(where="dcw"),
+)
