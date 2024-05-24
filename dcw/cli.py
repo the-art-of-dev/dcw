@@ -1,7 +1,8 @@
 # pylint: skip-file
+import os
 import sys
 from typing import List
-from dcw.core import DcwContext, DcwModule, DcwState, sys_to_dcw_module, dcw_envy_cfg
+from dcw.core import DcwContext, DcwModule, DcwState, load_dcw_module, sys_to_dcw_module, dcw_envy_cfg
 from argparse import ArgumentParser, BooleanOptionalAction
 from dcw.stdmods import project, regs, scm, scripts, task_collections, tasks, services, templates, deployments, proocedures
 from dcw.extmods import docker_compose, docker, jenkins
@@ -23,22 +24,6 @@ procs_mod = sys_to_dcw_module(proocedures)
 templs_mod = sys_to_dcw_module(templates)
 jenkins_mod = sys_to_dcw_module(jenkins)
 regs_mod = sys_to_dcw_module(regs)
-
-ctx = DcwContext(state=DcwState([], {}), modules={
-    proj_mod.name: proj_mod,
-    task_c_mod.name: task_c_mod,
-    tasks_mod.name: tasks_mod,
-    scripts_mod.name: scripts_mod,
-    svcs_mod.name: svcs_mod,
-    docker_compose_mod.name: docker_compose_mod,
-    depls_mod.name: depls_mod,
-    scm_mod.name: scm_mod,
-    docker_mod.name: docker_mod,
-    procs_mod.name: procs_mod,
-    templs_mod.name: templs_mod,
-    jenkins_mod.name: jenkins_mod,
-    regs_mod.name: regs_mod
-})
 
 
 def make_cmd_parser(module: DcwModule) -> ArgumentParser:
@@ -105,7 +90,37 @@ def cmd_to_stdout(cmd: EnvyCmd, cfg: EnvyConfig):
     return selector_to_str_colored(cmd.selector, cfg) + bcolors.OKGREEN + cmd.op + bcolors.ENDC + '=' + bcolors.WARNING + cmd.data + bcolors.ENDC
 
 
+def load_custom_mods() -> List[DcwModule]:
+    if not os.path.exists('modules'):
+        return []
+    mods = []
+    for filename in os.listdir('modules'):
+        if filename.endswith('.py'):
+            mods.append(load_dcw_module('modules.'+filename.removesuffix('.py'),
+                        os.path.abspath(os.path.join('modules', filename))))
+    return mods
+
+
 def app():
+    ctx = DcwContext(state=DcwState([], {}), modules={
+        proj_mod.name: proj_mod,
+        task_c_mod.name: task_c_mod,
+        tasks_mod.name: tasks_mod,
+        scripts_mod.name: scripts_mod,
+        svcs_mod.name: svcs_mod,
+        docker_compose_mod.name: docker_compose_mod,
+        depls_mod.name: depls_mod,
+        scm_mod.name: scm_mod,
+        docker_mod.name: docker_mod,
+        procs_mod.name: procs_mod,
+        templs_mod.name: templs_mod,
+        jenkins_mod.name: jenkins_mod,
+        regs_mod.name: regs_mod
+    })
+
+    for cm in load_custom_mods():
+        ctx.modules[cm.name] = cm
+
     parser = make_mod_parser(ctx.modules, len(list(filter(lambda x: not x.startswith('-'), sys.argv))) < 2)
     args, rest_args = parser.parse_known_args()
     ctx.debug = args.DEBUG
