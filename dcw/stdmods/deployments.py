@@ -19,6 +19,12 @@ SELECTOR = selector = ['depls']
 
 
 @dataclass
+class DcwDeployerConfig:
+    type: str
+    cfg: dict = field(default_factory=dict)
+
+
+@dataclass
 class DcwDeployment:
     name: str
     envs: List[str] = field(default_factory=list)
@@ -28,9 +34,14 @@ class DcwDeployment:
     service_groups: List[str] = field(default_factory=list)
     tasks: dict[str, dict] = field(default_factory=dict)
     svcs: dict[str, dict] = field(default_factory=dict)
+    hosts: List[str] = field(default_factory=list)
+    deployer: DcwDeployerConfig = None
     _: dict = field(default_factory=dict)
 
     def maker(self) -> str:
+        return self.type.replace('-', '_')
+
+    def deployer(self) -> str:
         return self.type.replace('-', '_')
 
 
@@ -179,9 +190,33 @@ def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     return run(builder_cfg.type, 'build_svc', args)
 
 
-@dcw_cmd()
-def cmd_deploy(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    return []
+@dcw_cmd({'name': ...})
+def cmd_build(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    depl_name = args['name']
+    state: EnvyState = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
+
+    svc_names = [sn for _, sn in state[f'depls.{depl_name}.svcs.*.name']]
+    out_ecl = []
+    for svc_name in svc_names:
+        out_ecl += cmd_build_svc(s, {
+            'name': svc_name,
+            'depl_name': depl_name
+        }, run)
+    
+    return out_ecl
+
+
+@dcw_cmd({'name': ..., 'svcs': []})
+def cmd_start(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    depl_name = args['name']
+    state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
+
+    depl: DcwDeployment = state[f'depls.{depl_name}', val_map_depl(depl_name)]
+    if depl.deployer is None:
+        raise Exception(f'No deployer specified for deployment {depl_name}')
+    return run(depl.deployer.type, 'start_depl', args)
 
 
 @dcw_cmd()

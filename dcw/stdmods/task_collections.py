@@ -5,10 +5,11 @@ import os
 from typing import Callable, List
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, dict_to_envy
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy, is_filter_selector
 from pprint import pprint as pp
 from invoke.tasks import task
 from invoke.program import Program
+from dcw.stdmods.deployments import DcwDeployerConfig, DcwDeployment, val_map_depl
 from dcw.stdmods.services import DcwService
 from dcw.utils import check_for_missing_args, is_false, value_map_list, value_map_dataclass as vm_dc
 
@@ -105,9 +106,23 @@ def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
         if svc is None:
             raise Exception(f'Deployment service not found {svc_name}')
 
-    
     buidler_cfg = svc.builder_cfg()
     return cmd_run_task(s, buidler_cfg.cfg, run)
+
+
+@dcw_cmd({'name': ...})
+def cmd_start_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    depl_name = args['name']
+    envy_cfg = dcw_envy_cfg()
+
+    state: EnvyState = EnvyState(s, envy_cfg)
+    state += run(NAME, 'load')
+    state += run('depls', 'load')
+
+    deployer_cfg: DcwDeployerConfig = state[f'depls.{depl_name}.deployer', vm_dc(DcwDeployerConfig)]
+
+    return cmd_run_task(state.state, deployer_cfg.cfg, run)
 
 
 @dcw_cmd()
