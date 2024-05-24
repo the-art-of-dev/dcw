@@ -231,8 +231,5 @@ def cmd_stop(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     return run(deployer.type, 'stop_depl', args)
 
 
-@dcw_cmd()
-def cmd_rollback(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    return []
 
 # endregion

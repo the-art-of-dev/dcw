@@ -5,7 +5,7 @@ import os
 from typing import Callable, List
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, dict_to_envy, is_filter_selector
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy, is_filter_selector, str_to_envy
 from pprint import pprint as pp
 from invoke.tasks import task
 from invoke.program import Program
@@ -129,6 +129,7 @@ def cmd_start_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     return cmd_run_task(state.state, deployer_cfg.cfg, run)
 
+
 @dcw_cmd({'name': ..., 'args': {}})
 def cmd_stop_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     check_for_missing_args(args, ['name'])
@@ -141,13 +142,17 @@ def cmd_stop_depl(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 
     deployer_cfg: DcwDeployerConfig = state[f'depls.{depl_name}.deployer', vm_dc(DcwDeployerConfig)]
 
+    args_str = ''
+    for k in args:
+        args_str += f'{k}={args[k]}\n'
+    args_state = EnvyState({}, envy_cfg) + str_to_envy(args_state)
+
     deployer_cfg.cfg['args'] = {
         **deployer_cfg.cfg.get('args', {}),
-        **args['args']
+        **args_state['']
     }
 
-    return cmd_run_task(state.state, deployer_cfg.cfg, run)
-
+    return cmd_run_task(state.state, {**deployer_cfg.cfg, **args}, run)
 
 
 @dcw_cmd()
