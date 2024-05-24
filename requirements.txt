@@ -1,8 +1,5 @@
-click
 colorlog
 PyYAML
-python-dotenv
-prompt_toolkit
 prettytable
 autopep8
 pylint
@@ -11,6 +8,6 @@ pytest-cov
 GitPython
 docker
 cryptography
-docker-compose-diagram
 invoke
 radon
+jenkinsapi
