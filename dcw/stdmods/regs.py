@@ -1,6 +1,6 @@
 # pylint: skip-file
 from __future__ import annotations
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Callable, List
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
@@ -24,7 +24,7 @@ class DcwRegistry:
     url: str = ''
     username: str = ''
     password: str = ''
-
+    _: dict = field(default_factory=dict)
 
 @dcw_cmd()
 def cmd_load(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:

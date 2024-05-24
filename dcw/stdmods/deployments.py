@@ -28,6 +28,7 @@ class DcwDeployment:
     service_groups: List[str] = field(default_factory=list)
     tasks: dict[str, dict] = field(default_factory=dict)
     svcs: dict[str, dict] = field(default_factory=dict)
+    _: dict = field(default_factory=dict)
 
     def maker(self) -> str:
         return self.type.replace('-', '_')

@@ -31,7 +31,7 @@ class DcwProcedure:
     is_active: str = ''
     tasks: List[DcwProcedure] = field(default_factory=dict)
     args: dict = field(default_factory=dict)
-    _runs: dict = field(default_factory=dict)
+    _: dict = field(default_factory=dict)
 
 
 def not_found_ex(name: str) -> Exception:

@@ -1,6 +1,6 @@
 # pylint: skip-file
 from __future__ import annotations
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import os
 from typing import Callable, List
 
@@ -29,6 +29,7 @@ class DcwCodeRepo:
     password: str = ''
     version: str = 'main'
     _local_url: str = ''
+    _: dict = field(default_factory=dict)
 
     def remote_url(self) -> str:
         if self.username == '' or self.password == '':

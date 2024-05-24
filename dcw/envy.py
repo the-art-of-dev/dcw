@@ -233,7 +233,7 @@ class EnvyConfig:
     sel_end: str = ']'
     prop_delim: str = '.'
     default_op: str = ''
-    default_sel: List[str] = field(default_factory=lambda: ['_env'])
+    default_sel: List[str] = field(default_factory=lambda: ['_'])
     operations: dict[str, Callable[[dict, List[str], str], dict]] = field(default_factory=envy_std_ops)
 
 
@@ -334,10 +334,6 @@ class EnvyState:
     def __init__(self, state: dict | List, cfg: EnvyConfig) -> None:
         self.state = convert_to_dicts(state)
         self.cfg = cfg
-        self._global = get_selector_val(self.state, self.cfg.default_sel)
-        if self._global is None:
-            self._global = {}
-        self.state = set_selector_val(self.state, self.cfg.default_sel, None)
 
     def __getitem__(self, selector: Any) -> Any | List[Any]:
         map_val = None
@@ -347,10 +343,6 @@ class EnvyState:
             selector = envy_selector(selector, self.cfg)
         if is_filter_selector(selector, self.cfg):
             return get_filter_selector_val(self.state, selector)
-
-        val = get_selector_val(self._global, selector, map_val)
-        if not val is None:
-            return val
 
         return get_selector_val(self.state, selector, map_val)
 
