@@ -213,10 +213,10 @@ def cmd_start(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     depl_name = args['name']
     state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
 
-    depl: DcwDeployment = state[f'depls.{depl_name}', val_map_depl(depl_name)]
-    if depl.deployer is None:
+    deployer: DcwDeployment = state[f'depls.{depl_name}.deployer', val_map_depl(depl_name)]
+    if deployer is None:
         raise Exception(f'No deployer specified for deployment {depl_name}')
-    return run(depl.deployer.type, 'start_depl', args)
+    return run(deployer.type, 'start_depl', args)
 
 
 @dcw_cmd()
