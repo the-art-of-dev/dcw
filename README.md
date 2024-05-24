@@ -6,6 +6,7 @@ _DCW is a wish for DCW to become a wrapper around development tooling_
 
 - [DCW (Development Configuration Wrapper)](#dcw-development-configuration-wrapper)
   - [Table of contents](#table-of-contents)
+  - [Getting started](#getting-started)
   - [Core](#core)
     - [Context](#context)
     - [Envy](#envy)
@@ -16,6 +17,13 @@ _DCW is a wish for DCW to become a wrapper around development tooling_
   - [Cli](#cli)
   - [Feature List](#feature-list)
   - [Development](#development)
+
+## Getting started
+
+Install dcw via pip:
+```sh
+pip3 install "git+https://github.com/the-art-of-dev/dcw.git#egg=dcw"
+```
 
 ## Core
 
