@@ -203,11 +203,11 @@ def cmd_build(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
             'name': svc_name,
             'depl_name': depl_name
         }, run)
-    
+
     return out_ecl
 
 
-@dcw_cmd({'name': ..., 'svcs': []})
+@dcw_cmd({'name': ..., 'args': {}})
 def cmd_start(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     check_for_missing_args(args, ['name'])
     depl_name = args['name']
@@ -217,6 +217,18 @@ def cmd_start(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     if deployer is None:
         raise Exception(f'No deployer specified for deployment {depl_name}')
     return run(deployer.type, 'start_depl', args)
+
+
+@dcw_cmd({'name': ..., 'args': {}})
+def cmd_stop(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    depl_name = args['name']
+    state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
+
+    deployer: DcwDeployerConfig = state[f'depls.{depl_name}.deployer', vm_dc(DcwDeployerConfig)]
+    if deployer is None:
+        raise Exception(f'No deployer specified for deployment {depl_name}')
+    return run(deployer.type, 'stop_depl', args)
 
 
 @dcw_cmd()
