@@ -76,6 +76,8 @@ def template_vars(text: str):
 def render_template(text: str, data: dict):
     tvars = template_vars(text)
     for tv in tvars:
+        if tv not in data or data[tv] == None:
+            raise Exception(f'Template varialbe {tv} not found!')
         text = text.replace('${' + tv + '}', data.get(tv, '${' + tv + '}'))
     return text
 
