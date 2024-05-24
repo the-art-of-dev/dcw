@@ -52,11 +52,13 @@ def load_script(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 @dcw_cmd()
 def cmd_load(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     state: EnvyState = EnvyState(s, dcw_envy_cfg()) + run('proj', 'load')
+    if None in [state['proj.cfg.allowed_scripts'], state['proj.cfg.scripts_root']]:
+        return []
 
     scripts_root = os.path.join(state['proj.root'], state['proj.cfg.scripts_root'])
     allowed_scripts = state['proj.cfg.allowed_scripts']
-    out_ecl = []
 
+    out_ecl = []
     for file_name in os.listdir(scripts_root):
         file_name: str = os.path.basename(file_name)
         if any([file_name.endswith(ext) for ext in allowed_scripts]):

@@ -103,7 +103,7 @@ def apply_scripts(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     state = EnvyState(s, dcw_envy_cfg()) + run('scripts', 'load')
     out_ecl = []
     for depl in state['depls'].values():
-        for en in depl['envs']:
+        for en in depl.get('envs', []):
             ecl = state[f'scripts.{en}.envy_log', value_map_list(EnvyCmd)]
             if not is_envy_log(ecl):
                 raise Exception(f'Script {en} not found for deployment {depl["name"]}.')
