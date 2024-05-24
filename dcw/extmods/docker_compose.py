@@ -40,16 +40,13 @@ def dc_svc_to_dcw_svc(name: str, dc_svc: dict) -> DcwService:
         env = dict_list_to_dict(env)
     svc.environment = {**env}
     # set labels
-    lbls = {}
+    lbls = dc_svc.get('labels', {})
     if isinstance(dc_svc.get('labels'), list):
         lbls = dict_list_to_dict(dc_svc.get('labels'))
-    elif isinstance(dc_svc.get('labels'), dict):
-        lbls = dc_svc.get('labels')
     svc.labels = lbls
     # set networks
     svc.networks = dc_svc.get('networks', svc.networks)
     # set volumes
-
     svc.volumes = dc_svc.get('volumes', [])
     # set extra_hosts
     eh_list = []
@@ -64,15 +61,6 @@ def dc_svc_to_dcw_svc(name: str, dc_svc: dict) -> DcwService:
 
             eh_list.append(new_eh)
     svc.extra_hosts = eh_list
-    # # set tasks
-    # tasks = {}
-    # if envy_res.get('tasks'):
-    #     tasks = envy_res.get('tasks')
-    # for task_name in tasks.keys():
-    #     svc.tasks[task_name] = {'name': task_name,
-    #                             'mode': 'SERVICE',
-    #                             'args': tasks[task_name]}
-
     return svc
 
 

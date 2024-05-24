@@ -8,7 +8,7 @@ import yaml
 from dcw.core import dcw_cmd, dcw_envy_cfg
 from dcw.envy import EnvyCmd, apply_cmd_log, dict_to_envy, get_selector_val, str_to_envy, EnvyState
 from pprint import pprint as pp
-from dcw.utils import check_for_missing_args, value_map_dataclass, value_map_dict
+from dcw.utils import check_for_missing_args, raise_if, value_map_dataclass as vm_dc, value_map_dict
 
 
 # --------------------------------------
@@ -95,23 +95,24 @@ def cmd_load(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
 @dcw_cmd({'name': ...})
 def cmd_build(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     check_for_missing_args(args, ['name'])
-    s = apply_cmd_log(s, run('svcs', 'load'), dcw_envy_cfg())
-    svc: DcwService = get_selector_val(s, ['svcs', args['name']], value_map_dataclass(DcwService))
-    if svc is None:
-        raise Exception(f'Service {svc} not found.')
+    svc_name = args['name']
+    state: EnvyState = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
 
-    b_cfg = svc.builder_cfg()
+    map_svc = raise_if(Exception(f'Service {svc_name} not found.'), vm_dc(DcwService))
+    svc: DcwService = state[f'svcs.{svc_name}', map_svc]
 
-    if b_cfg is None:
-        raise Exception(f'Build config for service {svc}, not found.')
+    builder_cfg = svc.builder_cfg()
 
-    return run(b_cfg.type, 'build', args)
+    if builder_cfg is None:
+        raise Exception(f'Build config for service {svc.name}, not found.')
+
+    return run(builder_cfg.type, 'build_svc', {**args, **builder_cfg.cfg})
 
 
 @dcw_cmd()
 def cmd_list(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    s = apply_cmd_log(s, run('svcs', 'load'), dcw_envy_cfg())
-    pp(get_selector_val(s, ['svcs']))
+    state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
+    pp(state['svcs'])
     return []
 
 # endregion

@@ -27,9 +27,16 @@ cfg:
             services:
                 - web
                 - web-app
+                - gone-*
             envs:
                 - base
                 - build
             url: docker-compose.build.yml
             type: docker-compose
     notfound: False
+    regs:
+      mydcr:
+        type: docker
+        url: http://examplereg
+        username: ${MYDCR_UNAME}
+        password: ${MYDCR_PASS}

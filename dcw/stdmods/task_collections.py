@@ -9,7 +9,8 @@ from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, dict_to_envy, get_select
 from pprint import pprint as pp
 from invoke.tasks import task
 from invoke.program import Program
-from dcw.utils import check_for_missing_args, value_map_dict, value_map_list
+from dcw.stdmods.services import DcwService
+from dcw.utils import check_for_missing_args, is_false, value_map_dict, value_map_list, value_map_dataclass as vm_dc
 
 # --------------------------------------
 #   Task Collections
@@ -73,13 +74,34 @@ def cmd_run_task(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     tname = args['name']
 
     task_colls: List[DcwTaskCollection] = state['task_c', value_map_list(DcwTaskCollection)]
-    
+
     tc = next(filter(lambda c: tname in c.task_names, task_colls))
     if tc is None:
         raise Exception(f'Task with name {tname} not found in loaded collections.')
-    
+
     run_inv_task(tc.tasks_root, tc.tasks_module, tname, args['args'])
     return []
+
+
+@dcw_cmd({'name': ..., 'depl_name': ...})
+def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    svc_name = args['name']
+    depl_name = args['depl_name']
+    envy_cfg = dcw_envy_cfg()
+
+    state: EnvyState = EnvyState(s, envy_cfg)
+    state += run(NAME, 'load')
+    state += run('svcs', 'load')
+    state += run('depls', 'load')
+
+    svc: DcwService = None
+    if is_false(depl_name):
+        svc = state[f'svcs.{svc_name}', vm_dc(DcwService)]
+    else:
+        svc = state[f'depls.{depl_name}.svcs.{svc_name}', vm_dc(DcwService)]
+    buidler_cfg = svc.builder_cfg()
+    return cmd_run_task(s, buidler_cfg.cfg, run)
 
 
 @dcw_cmd()

@@ -16,8 +16,8 @@ from dcw.utils import check_for_missing_args, render_template, template_vars, va
 # --------------------------------------
 # region
 __doc__ = '''Dcw Templates - handles DCW templating engine'''
-name = 'templs'
-selector = ['templs']
+NAME = name = 'templs'
+SELECTOR = selector = ['templs']
 
 
 @dataclass

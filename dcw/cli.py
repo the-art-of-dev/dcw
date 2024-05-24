@@ -5,7 +5,7 @@ import sys
 from typing import Any, List
 from dcw.core import DcwContext, DcwModule, DcwState, sys_to_dcw_module, dcw_envy_cfg
 from argparse import ArgumentParser, BooleanOptionalAction
-from dcw.stdmods import project, scm, scripts, task_collections, tasks, services, templates, deployments, proocedures, artf_regs
+from dcw.stdmods import project, regs, scm, scripts, task_collections, tasks, services, templates, deployments, proocedures
 from dcw.extmods import docker_compose, docker, jenkins
 from dcw.envy import EnvyCmd, EnvyConfig
 from pprint import pprint as pp
@@ -24,7 +24,7 @@ docker_mod = sys_to_dcw_module(docker)
 procs_mod = sys_to_dcw_module(proocedures)
 templs_mod = sys_to_dcw_module(templates)
 jenkins_mod = sys_to_dcw_module(jenkins)
-artf_regs_mod = sys_to_dcw_module(artf_regs)
+regs_mod = sys_to_dcw_module(regs)
 
 ctx = DcwContext(state=DcwState([], {}), modules={
     proj_mod.name: proj_mod,
@@ -39,7 +39,7 @@ ctx = DcwContext(state=DcwState([], {}), modules={
     procs_mod.name: procs_mod,
     templs_mod.name: templs_mod,
     jenkins_mod.name: jenkins_mod,
-    artf_regs_mod.name: artf_regs_mod
+    regs_mod.name: regs_mod
 })
 
 
@@ -78,6 +78,7 @@ def make_mod_parser(modules: dict[str, DcwModule], add_help=False) -> ArgumentPa
                         default=False, type=bool, action=BooleanOptionalAction)
     return parser
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -95,14 +96,16 @@ def selector_to_str_colored(selector: List[str], cfg: EnvyConfig) -> str:
     result = []
     for s in selector:
         if any([t in s for t in tokens]):
-            result.append(bcolors.BOLD + bcolors.WARNING + f'{cfg.sel_start}{s}{cfg.sel_end}' + bcolors.ENDC + bcolors.ENDC)
+            result.append(bcolors.BOLD + bcolors.OKBLUE + cfg.sel_start + bcolors.ENDC + bcolors.ENDC + bcolors.OKCYAN +
+                          s + bcolors.ENDC + bcolors.BOLD + bcolors.OKBLUE + cfg.sel_end + bcolors.ENDC + bcolors.ENDC)
         else:
-            result.append(bcolors.BOLD + bcolors.WARNING + s + bcolors.ENDC + bcolors.ENDC)
+            result.append(bcolors.BOLD + bcolors.OKCYAN + s + bcolors.ENDC + bcolors.ENDC)
     return f'{bcolors.FAIL}.{bcolors.ENDC}'.join(result)
 
+
 def cmd_to_stdout(cmd: EnvyCmd, cfg: EnvyConfig):
-    return selector_to_str_colored(cmd.selector, cfg) + bcolors.OKGREEN + cmd.op + bcolors.ENDC + '=' + bcolors.OKBLUE + cmd.data + bcolors.ENDC
-    
+    return selector_to_str_colored(cmd.selector, cfg) + bcolors.OKGREEN + cmd.op + bcolors.ENDC + '=' + bcolors.WARNING + cmd.data + bcolors.ENDC
+
 
 def app():
     parser = make_mod_parser(ctx.modules, len(list(filter(lambda x: not x.startswith('-'), sys.argv))) < 2)

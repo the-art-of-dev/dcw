@@ -76,8 +76,10 @@ def make_depl_svcs(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
         svcs = state[f'svcs.{depl_svc_name}']
         if not isinstance(svcs, list):
             svcs = [svcs]
+        else:
+            svcs = [svc for _, svc in svcs]
         svcs: List[DcwService] = [DcwService(**svc) for svc in svcs]
-        
+
         for svc in svcs:
             diff[f'{depl.name}.svcs.{svc.name}'] = svc.__dict__
 
@@ -157,6 +159,24 @@ def cmd_make(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
     depl: DcwDeployment = state[f'depls.{depl_name}', val_map_depl(depl_name)]
     return run(depl.maker(), 'make', args)
+
+
+@dcw_cmd({'name': ..., 'depl_name': ...})
+def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['depl_name', 'name'])
+    svc_name = args['name']
+    depl_name = args['depl_name']
+
+    state: EnvyState = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
+    map_svc = raise_if(Exception(f'Servivce {svc_name} not found in deployment {depl_name}.'), vm_dc(DcwService))
+    svc: DcwService = state[f'depls.{depl_name}.svcs.{svc_name}', map_svc]
+
+    builder_cfg = svc.builder_cfg()
+
+    if builder_cfg is None or builder_cfg.type == 'depls':
+        raise Exception(f'Build config for service {svc.name}, not found.')
+
+    return run(builder_cfg.type, 'build_svc', args)
 
 
 @dcw_cmd()

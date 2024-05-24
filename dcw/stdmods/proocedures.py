@@ -8,10 +8,11 @@ from typing import Callable, List
 import yaml
 
 from dcw.core import dcw_cmd, dcw_envy_cfg
+from dcw.stdmods.services import DcwService
 from dcw.stdmods.tasks import DcwTask
 from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, dict_to_envy, get_selector_val, prepand_selector
 from pprint import pprint as pp
-from dcw.utils import check_for_missing_args, default_val, is_false, value_map_dataclass, value_map_dict, raise_if
+from dcw.utils import check_for_missing_args, default_val, is_false, value_map_dataclass as vm_dc, value_map_dict, raise_if
 from dcw.logger import logger as lgg
 
 # --------------------------------------
@@ -115,5 +116,30 @@ def cmd_run(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     proc: DcwProcedure = state[f'procs.{proc_name}', raise_if(not_found_ex(proc_name), dict_to_proc)]
     return prepand_selector(run_proc(state.state, proc, run), ['runs'])
 
+
+@dcw_cmd({'name': ..., 'depl_name': ''})
+def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+    check_for_missing_args(args, ['name'])
+    svc_name = args['name']
+    depl_name = args['depl_name']
+    envy_cfg = dcw_envy_cfg()
+    
+    state: EnvyState = EnvyState(s, envy_cfg)
+    state += run(NAME, 'load')
+    state += run('svcs', 'load')
+    state += run('depls', 'load')
+
+    svc: DcwService = None
+    if is_false(depl_name):
+        svc = state[f'svcs.{svc_name}', vm_dc(DcwService)]
+    else:
+        svc = state[f'depls.{depl_name}.svcs.{svc_name}', vm_dc(DcwService)]
+    
+
+    proc_name = svc.builder_cfg().cfg.get('name', None)
+    if proc_name is None:
+        raise Exception(f'Procedure name not found for building service {svc_name} in deploymet {depl_name}')
+    
+    return cmd_run(asdict(s), {'name': proc_name}, run)
 
 # endregion
