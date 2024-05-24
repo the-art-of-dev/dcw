@@ -100,6 +100,9 @@ def cmd_build_svc(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
         svc = state[f'svcs.{svc_name}', vm_dc(DcwService)]
     else:
         svc = state[f'depls.{depl_name}.svcs.{svc_name}', vm_dc(DcwService)]
+    if svc is None or svc.builder_cfg() is None:
+        raise Exception(f'No builder config for service {svc.name}')
+    
     buidler_cfg = svc.builder_cfg()
     return cmd_run_task(s, buidler_cfg.cfg, run)
 
