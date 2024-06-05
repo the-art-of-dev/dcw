@@ -1,46 +1,119 @@
 # pylint: skip-file
 from __future__ import annotations
-from dataclasses import asdict, dataclass, field
 import os
-from typing import Callable, List
+from typing import Callable, List, TypedDict
 
 import yaml
 from dcw.core import dcw_cmd, dcw_envy_cfg
-from dcw.envy import EnvyCmd, EnvyState, apply_cmd_log, get_selector_val, dict_to_envy
-from dcw.utils import check_for_missing_args, value_map_dict, value_map_dataclass as vm_dc, raise_if
+from dcw.envy import EnvyCmd, EnvyState, dict_to_envy
+from dcw.utils import check_for_missing_args
 from pprint import pprint as pp
-from git import GitCommandError, InvalidGitRepositoryError, Repo
-
+from git import Repo
+from urllib.parse import urlparse, urlunparse
 # --------------------------------------
-#   Code Repository
+#   SCM
 # --------------------------------------
 # region
-__doc__ = 'Dcw Tasks - handles DCW code repositories'
+__doc__ = 'Dcw SCM - handles DCW source code management'
 NAME = name = 'scm'
 SELECTOR = selector = ['scm']
 
 
-@dataclass
-class DcwCodeRepo:
-    name: str
-    type: str
-    url: str
-    username: str = ''
-    password: str = ''
-    version: str = 'main'
-    _local_url: str = ''
-    _: dict = field(default_factory=dict)
+DcwRepoConfig = TypedDict('DcwRepoConfig', {
+    'type': str,
+    'src_url': str,
+    'dest_url': str,
+    'src_version': str,
+    'username': str,
+    'password': str
+})
 
-    def remote_url(self) -> str:
-        if self.username == '' or self.password == '':
-            return self.url
-        else:
-            return f"https://{self.username}:{self.password}@{self.url.removeprefix('https://')}"
+DcwRepo = TypedDict('DcwRepo', {
+    'name': str,
+    'type': str,
+    'src_url': str,
+    'dest_url': str,
+    'src_version': str,
+    'dest_version': str,
+    'username': str,
+    'password': str,
+    'is_dirty': bool
+})
 
-    def local_url(self) -> str:
-        if self._local_url != '' and isinstance(self._local_url, str):
-            return self._local_url
-        return self.name
+
+def get_version_from_url(url: str, default='main') -> str:
+    url_parts = urlparse(url)
+    if url_parts.fragment == '':
+        return default
+    return url_parts.fragment
+
+
+def set_url_version(url: str, version) -> str:
+    url_parts = urlparse(url)
+    return urlunparse({
+        **url_parts._asdict(),
+        'fragment': version
+    }.values())
+
+
+def remove_url_version(url: str) -> str:
+    url_parts = urlparse(url)
+    return urlunparse({
+        **url_parts._asdict(),
+        'fragment': ''
+    }.values())
+
+
+def get_local_version_of_repo(repo_url: str) -> str:
+    if not os.path.exists(repo_url):
+        return ''
+
+    repo = Repo.init(repo_url, mkdir=False)
+    return repo.active_branch.name
+
+
+def set_url_auth(url: str, username: str, password: str) -> str:
+    if username in [None, ''] or password in [None, '']:
+        return url
+
+    url_parts = urlparse(url)
+    return urlunparse({
+        **url_parts._asdict(),
+        'netloc': f'{username}:{password}@{url_parts.netloc}'
+    }.values())
+
+
+def check_is_local_repo_dirty(repo_url: str) -> bool:
+    if not os.path.exists(repo_url):
+        return False
+    repo = Repo.init(repo_url, mkdir=False)
+    return repo.is_dirty()
+
+
+def clone_if_not_exist(repo: DcwRepo):
+    if os.path.exists(repo['dest_url']):
+        return
+    url = remove_url_version(repo['src_url'])
+    url = set_url_auth(url, repo.get('username', None), repo.get('password', None))
+    git_repo = Repo.init(repo['dest_url'])
+    git_repo.git.remote(['add', 'origin', url])
+    git_repo.git.fetch()
+    git_repo.git.pull(['origin', repo['src_version']])
+
+
+def reset_if_dirty(repo: DcwRepo):
+    if not repo['is_dirty']:
+        return
+    git_repo = Repo.init(repo['dest_url'], mkdir=False)
+    git_repo.head.reset(index=True, working_tree=True)
+    git_repo.git.clean(['-fxd'])
+
+
+def goto_src_version(repo: DcwRepo):
+    git_repo = Repo.init(repo['dest_url'], mkdir=False)
+    git_repo.git.fetch()
+    git_repo.git.checkout(['-f', repo['src_version']])
+    git_repo.git.pull(['origin', repo['src_version']])
 
 
 def not_found_ex(name: str) -> Exception:
@@ -50,109 +123,52 @@ def not_found_ex(name: str) -> Exception:
 @dcw_cmd()
 def cmd_load(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     state = EnvyState(s, dcw_envy_cfg()) + run('proj', 'load')
-    scm_cfg: dict = state['proj.cfg.scm']
-    if scm_cfg is None:
+
+    proj_root: str = state['proj.root']
+    scm_root: str = state['proj.cfg.scm_root']
+    scm_cfg: dict[str, DcwRepoConfig] = state['proj.cfg.scm']
+
+    if scm_cfg == None:
         return []
 
-    return dict_to_envy({n: asdict(DcwCodeRepo(n, **cr)) for n, cr in scm_cfg.items()})
+    if scm_root == None:
+        raise Exception('Property proj.cfg.scm_root not set')
 
+    diff_state: dict[str, DcwRepo] = {}
 
-def find_code_repo(s: dict, name: str, run: Callable) -> DcwCodeRepo:
-    cl = run('proj', 'load') + run('scm', 'load')
-    s = apply_cmd_log(s, cl, dcw_envy_cfg())
-    code_repos: dict[str, DcwCodeRepo] = get_selector_val(s, ['scm'], value_map_dict(str, DcwCodeRepo))
-    if name not in code_repos:
-        raise Exception(f'Code repo with name {name} not found!')
-    return code_repos[name]
+    for rn, rcfg in scm_cfg.items():
+        if rcfg.get('dest_url', None) in [None, '']:
+            rcfg['dest_url'] = os.path.join(proj_root, scm_root, rn)
+        if rcfg.get('src_version', None) in [None, '']:
+            rcfg['src_version'] = get_version_from_url(rcfg['src_url'])
 
+        diff_state[rn] = {
+            'name': rn,
+            **rcfg,
+            'dest_version': get_local_version_of_repo(rcfg['dest_url']),
+            'is_dirty': check_is_local_repo_dirty(rcfg['dest_url']),
+        }
 
-def clone_repo(code_repo: DcwCodeRepo, local_path: str) -> bool:
-    try:
-        Repo.clone_from(code_repo.remote_url(), local_path)
-        return True
-    except GitCommandError as e:
-        print(f"An error occurred: {e}")
-        return False
-
-
-def map_cr(name: str):
-    return raise_if(not_found_ex(name), vm_dc(DcwCodeRepo))
+    return dict_to_envy(diff_state)
 
 
 @dcw_cmd({'name': ...})
-def cmd_clone(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    check_for_missing_args(args, ['name'])
-    repo_name = args['name']
-    state = EnvyState(s, dcw_envy_cfg()) + run('proj', 'load') + run(NAME, 'load')
-    repo: DcwCodeRepo = state[f'scm.{repo_name}', map_cr(repo_name)]
-
-    if not clone_repo(repo, os.path.join(state['proj.root'], state['proj.cfg.scm_root'], repo.name)):
-        raise Exception(f'Error while clonning repo {repo.name}')
-    return []
-
-
-def checkout_version(code_repo: DcwCodeRepo) -> bool:
-    try:
-        repo = Repo(code_repo.local_url)
-        repo.git.checkout(code_repo.version)
-        return True
-    except GitCommandError as e:
-        print(f"Error: {e}")
-        return False
-
-
-@dcw_cmd({'name': ...})
-def cmd_checkout(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
+def cmd_sync(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
     check_for_missing_args(args, ['name'])
     repo_name = args['name']
     state = EnvyState(s, dcw_envy_cfg()) + run(NAME, 'load')
-    repo: DcwCodeRepo = state[f'scm.{repo_name}', map_cr(repo_name)]
 
-    if not checkout_version(repo):
-        raise Exception(f'Error while checking out version on repo {repo.name}')
-    return []
+    repos: List[DcwRepo] = state[f'scm.{repo_name}']
+    if isinstance(repos, list):
+        repos = [repo for _, repo in repos]
+    else:
+        repos = [repos]
 
+    for r in repos:
+        clone_if_not_exist(r)
+        reset_if_dirty(r)
+        goto_src_version(r)
 
-def pull_repo(code_repo: DcwCodeRepo) -> bool:
-    try:
-        repo = Repo(code_repo.local_url)
-        repo.remotes['origin'].fetch()
-        repo.remotes['origin'].pull()
-        return True
-    except InvalidGitRepositoryError:
-        print("Invalid Git repository.")
-        return False
-    except GitCommandError as e:
-        print("Error pulling code:", e)
-        return False
-
-
-@dcw_cmd({'name': ...})
-def cmd_pull(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    check_for_missing_args(args, ['name'])
-    cr = find_code_repo(s, args['name'], run)
-    if not pull_repo(cr):
-        raise Exception(f'Error while pulling code repo {cr.name}')
-    return []
-
-
-def tag_repo(code_repo: DcwCodeRepo, tag_name: str) -> bool:
-    try:
-        repo = Repo(code_repo.local_url)
-        tag = repo.create_tag(tag_name)
-        repo.remotes['origin'].push(tag)
-        return True
-    except GitCommandError as e:
-        print(f"Error: {e}")
-        return False
-
-
-@dcw_cmd({'name': ..., 'tag_name': ...})
-def cmd_tag(s: dict, args: dict, run: Callable) -> List[EnvyCmd]:
-    check_for_missing_args(args, ['name', 'tag_name'])
-    cr = find_code_repo(s, args['name'], run)
-    if not tag_repo(cr, args['tag_name']):
-        raise Exception(f'Error while tagging code repo {cr.name}')
     return []
 
 
