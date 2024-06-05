@@ -91,12 +91,14 @@ def check_is_local_repo_dirty(repo_url: str) -> bool:
 
 
 def clone_if_not_exist(repo: DcwRepo):
-    if os.path.exists(repo['dest_url']):
-        return
     url = remove_url_version(repo['src_url'])
     url = set_url_auth(url, repo.get('username', None), repo.get('password', None))
     git_repo = Repo.init(repo['dest_url'])
-    git_repo.git.remote(['add', 'origin', url])
+    remote = next(filter(lambda x: x.name == 'origin', git_repo.remotes), None)
+    if remote is not None:
+        git_repo.git.remote(['set-url', 'origin', url])
+    else:
+        git_repo.git.remote(['add', 'origin', url])
     git_repo.git.fetch()
     git_repo.git.pull(['origin', repo['src_version']])
 
