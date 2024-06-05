@@ -97,8 +97,9 @@ def clone_if_not_exist(repo: DcwRepo):
     remote = next(filter(lambda x: x.name == 'origin', git_repo.remotes), None)
     if remote is not None:
         git_repo.git.remote(['set-url', 'origin', url])
-    else:
-        git_repo.git.remote(['add', 'origin', url])
+        return
+    
+    git_repo.git.remote(['add', 'origin', url])
     git_repo.git.fetch()
     git_repo.git.pull(['origin', repo['src_version']])
 
