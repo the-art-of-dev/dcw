@@ -53,9 +53,6 @@ class EnvyCmd:
     op: str
     data: str
 
-    def __str__(self) -> str:
-        return
-
 
 def match_filter(target: str, filter: str) -> bool:
     filter = filter.replace('*', '\\S+')
@@ -78,7 +75,7 @@ def list_to_dict(l: List) -> dict:
 
 
 def dict_to_list(d: dict) -> List:
-    return [d[k] for k in sorted(d.keys())]
+    return [d[f'<{k}>'] for k in sorted([int(i.strip('<>')) for i in d.keys()])]
 
 
 def convert_to_lists(state: dict) -> dict | List:
